@@ -1,0 +1,138 @@
+{
+  "$$ClassName" : "TCastleViewport",
+  "Background" : "Background1",
+  "Camera" : "MainCamera",
+  "FullSize" : true,
+  "Items" : {
+    "$$ClassName" : "TCastleRootTransform",
+    "PhysicsProperties" : {
+      "$$ClassName" : "TPhysicsProperties",
+      "LayerCollisions" : {
+        "$$ClassName" : "TCastleLayerCollisions"
+      },
+      "LayerNames" : {
+        "$$ClassName" : "TCastleLayerNames"
+      }
+    },
+    "UseHeadlight" : "hlOn",
+    "$Children" : [
+      {
+        "$$ClassName" : "TCastleCamera",
+        "Name" : "MainCamera",
+        "Orthographic" : {
+          "$$ClassName" : "TCastleOrthographic"
+        },
+        "Perspective" : {
+          "$$ClassName" : "TCastlePerspective"
+        },
+        "RotationPersistent" : {
+          "$$ClassName" : "TCastleVector4RotationPersistent",
+          "W" : 8.9295095205307007E-001,
+          "X" : -2.7995684742927551E-001,
+          "Y" : 9.3978196382522583E-001,
+          "Z" : 1.9604001939296722E-001
+        },
+        "ScalePersistent" : {
+          "$$ClassName" : "TCastleVector3Persistent",
+          "X" : 9.9999994039535522E-001,
+          "Y" : 9.9999994039535522E-001,
+          "Z" : 9.9999994039535522E-001
+        },
+        "TranslationPersistent" : {
+          "$$ClassName" : "TCastleVector3Persistent",
+          "X" : 3.0473857879638672E+001,
+          "Y" : 2.2764654159545898E+001,
+          "Z" : 2.6787050247192383E+001
+        },
+        "$Children" : [
+          {
+            "$$ClassName" : "TCastleDirectionalLight",
+            "Name" : "DirectionalLight1"
+          }
+        ]
+      },
+      {
+        "$$ClassName" : "TCastleScene",
+        "AutoAnimation" : "EpicMovement!",
+        "CastShadows" : false,
+        "ExposeTransforms" : [
+        ],
+        "Name" : "ModelScene",
+        "ProcessEvents" : true,
+        "RenderOptions" : {
+          "$$ClassName" : "TCastleScene.TSceneRenderOptions"
+        },
+        "RotationPersistent" : {
+          "$$ClassName" : "TCastleVector4RotationPersistent",
+          "Z" : 1.0000000000000000E+000
+        },
+        "ScalePersistent" : {
+          "$$ClassName" : "TCastleVector3Persistent",
+          "X" : 1.2000000000000000E+001,
+          "Y" : 1.2000000000000000E+001,
+          "Z" : 1.2000000000000000E+001
+        },
+        "TimePlayingSpeed" : 2.0000000000000000E+000,
+        "URL" : "castle-data:/3.glb"
+      }
+    ]
+  },
+  "Name" : "Viewport1",
+  "Transparent" : true,
+  "$NonVisualComponents" : [
+    {
+      "$$ClassName" : "TCastleBackground",
+      "Name" : "Background1"
+    }
+  ],
+  "$Children" : [
+    {
+      "$$ClassName" : "TCastleExamineNavigation",
+      "ExactMovement" : false,
+      "Name" : "ExamineNavigation1"
+    }
+  ],
+  "InternalDesignCamera" : {
+    "$$ClassName" : "TCastleCamera",
+    "Name" : "",
+    "Orthographic" : {
+      "$$ClassName" : "TCastleOrthographic"
+    },
+    "Perspective" : {
+      "$$ClassName" : "TCastlePerspective"
+    },
+    "RotationPersistent" : {
+      "$$ClassName" : "TCastleVector4RotationPersistent",
+      "W" : 1.0035457611083984E+000,
+      "X" : -3.6574399471282959E-001,
+      "Y" : 9.1351336240768433E-001,
+      "Z" : 1.7811457812786102E-001
+    },
+    "ScalePersistent" : {
+      "$$ClassName" : "TCastleVector3Persistent",
+      "X" : 9.9999994039535522E-001,
+      "Z" : 9.9999994039535522E-001
+    },
+    "TranslationPersistent" : {
+      "$$ClassName" : "TCastleVector3Persistent",
+      "X" : 3.5202980041503906E+001,
+      "Y" : 2.7189952850341797E+001,
+      "Z" : 2.8661684036254883E+001
+    }
+  },
+  "InternalDesignNavigations[dnFly]" : {
+    "$$ClassName" : "TCastleWalkNavigationDesign",
+    "MoveSpeed" : 6.3095737457275391E+001,
+    "Name" : ""
+  },
+  "InternalDesignNavigations[dnExamine]" : {
+    "$$ClassName" : "TCastleExamineNavigationDesign",
+    "Exists" : false,
+    "Name" : ""
+  },
+  "InternalDesignNavigations[dn2D]" : {
+    "$$ClassName" : "TCastle2DNavigationDesign",
+    "Exists" : false,
+    "Name" : ""
+  }
+}
