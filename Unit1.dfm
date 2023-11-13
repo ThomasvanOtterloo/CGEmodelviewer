@@ -20,7 +20,8 @@ object Form1: TForm1
     Height = 538
     Container.DesignUrl = 'castle-data:/test_3d.castle-user-interface'
     Align = alClient
-    ExplicitTop = -8
+    ExplicitLeft = -8
+    ExplicitTop = 7
   end
   object Button1: TButton
     Left = 843
@@ -36,9 +37,9 @@ object Form1: TForm1
     Top = 368
     Width = 116
     Height = 65
-    Caption = 'Change position!'
+    Caption = 'NewCamera'
     TabOrder = 2
-    OnClick = Button2Click
+    OnClick = NewCamera
   end
   object Button3: TButton
     Left = 843
@@ -51,8 +52,8 @@ object Form1: TForm1
     OnClick = Button3Click
   end
   object ListBox1: TListBox
-    Left = 768
-    Top = 24
+    Left = 784
+    Top = 32
     Width = 121
     Height = 97
     ItemHeight = 15
@@ -69,28 +70,37 @@ object Form1: TForm1
     OnClick = StartStopAnimation
   end
   object StaticText1: TStaticText
-    Left = 16
+    Left = 784
     Top = 8
-    Width = 321
-    Height = 34
-    Caption = 'StaticText1'
+    Width = 65
+    Height = 19
+    Caption = 'Animations'
     TabOrder = 6
   end
   object StaticText2: TStaticText
-    Left = 16
-    Top = 48
-    Width = 321
-    Height = 17
-    Caption = 'StaticText1'
+    Left = 640
+    Top = 7
+    Width = 44
+    Height = 19
+    Caption = 'Objects'
     TabOrder = 7
   end
   object StaticText3: TStaticText
     Left = 16
-    Top = 71
-    Width = 321
-    Height = 18
-    Caption = 'StaticText1'
+    Top = 32
+    Width = 61
+    Height = 19
+    Caption = 'DebugLine'
     TabOrder = 8
+  end
+  object ListBox2: TListBox
+    Left = 640
+    Top = 32
+    Width = 121
+    Height = 97
+    ItemHeight = 15
+    TabOrder = 9
+    OnClick = ListBox2Click
   end
   object FailureDection: TTimer
     Interval = 500
