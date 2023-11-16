@@ -38,3 +38,4 @@ Win64/
 *.local
 *.identcache
 *.res
+*.castle-engine-output/
