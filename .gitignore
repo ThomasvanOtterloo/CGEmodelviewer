@@ -39,3 +39,5 @@ Win64/
 *.identcache
 *.res
 *.castle-engine-output/
+castle-engine-output/
+
