@@ -49,22 +49,12 @@
           {
             "$$ClassName" : "TCastleDirectionalLight",
             "Name" : "DirectionalLight1"
-          },
-          {
-            "$$ClassName" : "TCastleCamera",
-            "Name" : "Camera1",
-            "Orthographic" : {
-              "$$ClassName" : "TCastleOrthographic"
-            },
-            "Perspective" : {
-              "$$ClassName" : "TCastlePerspective"
-            }
           }
         ]
       },
       {
         "$$ClassName" : "TCastleScene",
-        "AutoAnimation" : "EpicMovement!",
+        "AutoAnimation" : "Movement",
         "CastShadows" : false,
         "ExposeTransforms" : [
         ],
@@ -84,10 +74,12 @@
           "Z" : 1.2000000000000000E+001
         },
         "TimePlayingSpeed" : 2.0000000000000000E+000,
-        "URL" : "castle-data:/3.glb"
+        "URL" : "castle-data:/7.glb"
       },
       {
         "$$ClassName" : "TCastleCamera",
+        "CastShadows" : false,
+        "Collides" : false,
         "Name" : "ErrorCamera",
         "Orthographic" : {
           "$$ClassName" : "TCastleOrthographic"
@@ -95,12 +87,19 @@
         "Perspective" : {
           "$$ClassName" : "TCastlePerspective"
         },
+        "RenderLayer" : "rlFront",
         "TranslationPersistent" : {
           "$$ClassName" : "TCastleVector3Persistent",
-          "X" : 5.2857565879821777E+000,
-          "Y" : 1.0362891197204590E+001,
-          "Z" : 2.9188415527343750E+001
-        }
+          "X" : -6.6598463058471680E-001,
+          "Y" : 1.4124178886413574E+000,
+          "Z" : 7.4833693504333496E+000
+        },
+        "$Children" : [
+          {
+            "$$ClassName" : "TCastleDirectionalLight",
+            "Name" : "DirectionalLight2"
+          }
+        ]
       }
     ]
   },
@@ -141,11 +140,68 @@
         "X" : 2.0000000000000000E+001,
         "Y" : 2.0000000000000000E+001
       },
-      "Width" : 3.6000000000000000E+002,
+      "Width" : 3.5000000000000000E+002,
       "$NonVisualComponents" : [
         {
           "$$ClassName" : "TCastleBackground",
           "Name" : "Background2"
+        }
+      ],
+      "$Children" : [
+        {
+          "$$ClassName" : "TCastleButton",
+          "Caption" : "Zoom-in",
+          "CustomBackgroundDisabled" : {
+            "$$ClassName" : "TCastleImagePersistent"
+          },
+          "CustomBackgroundFocused" : {
+            "$$ClassName" : "TCastleImagePersistent"
+          },
+          "CustomBackgroundNormal" : {
+            "$$ClassName" : "TCastleImagePersistent"
+          },
+          "CustomBackgroundPressed" : {
+            "$$ClassName" : "TCastleImagePersistent"
+          },
+          "HorizontalAnchorParent" : "hpRight",
+          "HorizontalAnchorSelf" : "hpRight",
+          "Image" : {
+            "$$ClassName" : "TCastleImagePersistent"
+          },
+          "Name" : "MakeBigger",
+          "TranslationPersistent" : {
+            "$$ClassName" : "TCastleVector2Persistent",
+            "X" : 3.0000000000000000E+000,
+            "Y" : -1.0000000000000000E+000
+          },
+          "VerticalAnchorParent" : "vpTop",
+          "VerticalAnchorSelf" : "vpTop"
+        },
+        {
+          "$$ClassName" : "TCastleButton",
+          "Caption" : "X",
+          "CustomBackgroundDisabled" : {
+            "$$ClassName" : "TCastleImagePersistent"
+          },
+          "CustomBackgroundFocused" : {
+            "$$ClassName" : "TCastleImagePersistent"
+          },
+          "CustomBackgroundNormal" : {
+            "$$ClassName" : "TCastleImagePersistent"
+          },
+          "CustomBackgroundPressed" : {
+            "$$ClassName" : "TCastleImagePersistent"
+          },
+          "Image" : {
+            "$$ClassName" : "TCastleImagePersistent"
+          },
+          "Name" : "ExitButton",
+          "TranslationPersistent" : {
+            "$$ClassName" : "TCastleVector2Persistent",
+            "Y" : -1.0000000000000000E+000
+          },
+          "VerticalAnchorParent" : "vpTop",
+          "VerticalAnchorSelf" : "vpTop"
         }
       ],
       "InternalDesignCamera" : {
@@ -159,20 +215,16 @@
         },
         "RotationPersistent" : {
           "$$ClassName" : "TCastleVector4RotationPersistent",
-          "W" : 1.2582235336303711E+000,
-          "X" : -6.6411472856998444E-002,
-          "Y" : -9.9655079841613770E-001,
-          "Z" : -4.9759849905967712E-002
-        },
-        "ScalePersistent" : {
-          "$$ClassName" : "TCastleVector3Persistent",
-          "Y" : 1.0000001192092896E+000
+          "W" : 1.1063951253890991E+000,
+          "X" : -1.7663995921611786E-001,
+          "Y" : 9.7865462303161621E-001,
+          "Z" : 1.0504051297903061E-001
         },
         "TranslationPersistent" : {
           "$$ClassName" : "TCastleVector3Persistent",
-          "X" : 4.1718873977661133E+000,
+          "X" : 4.2076277732849121E+000,
           "Y" : 1.2237089872360229E+000,
-          "Z" : 8.7264728546142578E+000
+          "Z" : 9.2346162796020508E+000
         }
       },
       "InternalDesignNavigations[dnFly]" : {
@@ -202,20 +254,16 @@
     },
     "RotationPersistent" : {
       "$$ClassName" : "TCastleVector4RotationPersistent",
-      "W" : 9.4261664152145386E-001,
-      "X" : -3.1242382526397705E-001,
-      "Y" : 9.3900102376937866E-001,
-      "Z" : 1.4376577734947205E-001
-    },
-    "ScalePersistent" : {
-      "$$ClassName" : "TCastleVector3Persistent",
-      "Y" : 1.0000001192092896E+000
+      "W" : 1.0268139839172363E+000,
+      "X" : -1.4625184237957001E-001,
+      "Y" : 9.8637485504150391E-001,
+      "Z" : 7.5332634150981903E-002
     },
     "TranslationPersistent" : {
       "$$ClassName" : "TCastleVector3Persistent",
-      "X" : 4.6299186706542969E+001,
-      "Y" : 2.7207433700561523E+001,
-      "Z" : 4.0759506225585938E+001
+      "X" : 3.3760345458984375E+001,
+      "Y" : 1.1457036972045898E+001,
+      "Z" : 3.1926891326904297E+001
     }
   },
   "InternalDesignNavigations[dnFly]" : {

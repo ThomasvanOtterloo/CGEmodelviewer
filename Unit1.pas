@@ -7,40 +7,34 @@ uses
   System.Classes, Vcl.Graphics, CastleShapes, CastleCameras, X3DNodes, X3DLoad,
   CastleTransform, CastleBoxes, CastleSceneCore, X3DLoadInternalUtils,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.CastleControl, CastleUIControls,
-  Math, CastleComponentSerialize, CastleKeysMouse, CastleLog,
+  Math, CastleComponentSerialize, CastleKeysMouse, CastleLog, CastleControls,
   CastleVectors, CastleGLUtils, CastleColors, CastleScene, Vcl.StdCtrls,
   Vcl.ExtCtrls, CastleViewport;
 
 type
   TCastleApp = class(TCastleView)
 
-    procedure Render; override; // TCastleUserInterface
     procedure Update(const SecondsPassed: Single; var HandleInput: Boolean);
   private
   end;
 
   TForm1 = class(TForm)
     CastleControl: TCastleControl;
-    Button1: TButton;
-    Button2: TButton;
-    Button3: TButton;
+    SetErrorButton: TButton;
     ListBox1: TListBox;
     FailureDection: TTimer;
     Button4: TButton;
     StaticText1: TStaticText;
-    StaticText2: TStaticText;
     StaticText3: TStaticText;
-    ListBox2: TListBox;
 
     procedure FormCreate(Sender: TObject);
     procedure FailureDetectionTimer(Sender: TObject);
-    procedure Button3Click(Sender: TObject);
+    procedure SetErrorButtonClick(Sender: TObject);
     procedure StartStopAnimation(Sender: TObject);
     procedure Button1Click(Sender: TObject);
     procedure NewCamera(Sender: TObject);
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure ListBoxPlayAnimation(Sender: TObject);
-    procedure ListBox2Click(Sender: TObject);
   private
     { Private declarations }
     GLWin: TCastleControl;
@@ -48,12 +42,15 @@ type
 
     function FindCastleControls(o: TObject): TArray<TCastleControl>;
     procedure SetupCamera;
-    function GetSceneToFocusOn: TCastleScene;
     procedure InitVars;
-    procedure PlayStatusLight;
     procedure InitEditorComponents;
+    procedure BlinkRed(NodeName: string);
+    procedure SetFailedObject(NodeName: string);
+
   public
     { Public declarations }
+    procedure ExitFailDetectionWindow(Sender: TObject);
+    procedure FullscreenFailDetectionWindow(Sender: TObject);
   end;
 
 var
@@ -63,6 +60,8 @@ var
   ModelScene: TCastleScene;
   Viewport1: TCastleViewport;
   Viewport2: TCastleViewport;
+  MakeBiggerButton: TCastleButton;
+  ExitButton: TCastleButton;
   Items: TCastleRootTransform;
   ErrorCamera: TCastleCamera;
 
@@ -72,6 +71,7 @@ var
   Mat2: TPhysicalMaterialNode;
   AppearanceAsAbstractNode: TAppearanceNode;
   PowerSwitchnode: TAppearanceNode;
+  Hdmi: TCastleTransform;
   IsRed: Boolean;
 
 implementation
@@ -113,7 +113,7 @@ begin
   GLWin.Container.View := GLView;
 
   InitVars;
-  SetupCamera;
+  SetupCamera; // todo;
 
 end;
 
@@ -132,6 +132,24 @@ begin
     as TCastleViewport;
   ErrorCamera := CastleControl.Container.DesignedComponent('ErrorCamera')
     as TCastleCamera;
+  MakeBiggerButton := CastleControl.Container.DesignedComponent('MakeBigger')
+    as TCastleButton;
+  MakeBiggerButton.OnClick := FullscreenFailDetectionWindow;
+
+  ExitButton := CastleControl.Container.DesignedComponent('ExitButton')
+    as TCastleButton;
+  ExitButton.OnClick := ExitFailDetectionWindow;
+
+end;
+
+procedure TForm1.ExitFailDetectionWindow(Sender: TObject);
+begin
+  Viewport2.Exists := false;
+end;
+
+procedure TForm1.FullscreenFailDetectionWindow(Sender: TObject);
+begin
+  Viewport2.FullSize := True;
 end;
 
 procedure TForm1.InitVars;
@@ -150,8 +168,8 @@ begin
 
   // sets extra ErrorCamera in the world.
   Viewport2.Items := Viewport1.Items;
-  Viewport2.Camera := MainCamera;
   Viewport2.Camera := ErrorCamera;
+  Viewport2.Exists := False;
 
   // search for statuslight object
   AppearanceAsAbstractNode := ModelScene.Node('StatusLight') as TAppearanceNode;
@@ -189,69 +207,91 @@ begin
     if IsRed then
     begin
       Mat.BaseColor := Vector3(0.9, 0.9, 0.9); // almost white
+      Mat2.BaseColor := Vector3(0.9, 0.9, 0.9);
       IsRed := false
     end
     else
     begin
       Mat.BaseColor := Vector3(0.9, 0.1, 0.1); // reddish
+      Mat2.BaseColor := Vector3(0.9, 0.1, 0.1);
       IsRed := True;
     end;
   end
   else
     Mat.BaseColor := Vector3(0, 1, 0); // green
-
-end;
-
-procedure TCastleApp.Render;
-var
-  Points: array [0 .. 3] of TVector2;
-begin
-  inherited;
-  Points[0] := Vector2(0, Container.UnscaledHeight / 2);
-  Points[1] := Vector2(Container.UnscaledWidth, Container.UnscaledHeight / 2);
-  Points[2] := Vector2(Container.UnscaledWidth / 2, 0);
-  Points[3] := Vector2(Container.UnscaledWidth / 2, Container.UnscaledHeight);
-
-  if IsCastleControlOnForm then
-    DrawPrimitive2D(pmLines, Points, Purple)
-  else
-    DrawPrimitive2D(pmLines, Points, Red);
 end;
 
 procedure TForm1.Button1Click(Sender: TObject);
-
 begin
   // todo; randomize color of selected node
+   // turns the powerswitch button RED.
+   PowerSwitchnode := ModelScene.Node(DecodeX3DName('MPowerCord'))
+   as TAppearanceNode; // works
+   Mat2 := PowerSwitchnode.Material as TPhysicalMaterialNode;
+   Mat2.BaseColor := Vector3(0.9, 0.1, 0.1); // reddish
+end;
 
-  // turns the powerswitch button RED.
-  // PowerSwitchnode := ModelScene.Node(DecodeX3DName('CastleEncoded_82$44$82$44$82$46$005')) as TAppearanceNode; //works
-  PowerSwitchnode := ModelScene.Node('connector2') as TAppearanceNode;
-  // Node name 'PowerSwitch' of class 'TX3DNode' not found.
-  Mat2 := PowerSwitchnode.Material as TPhysicalMaterialNode;
-  Mat2.BaseColor := Vector3(0.9, 0.1, 0.1); // reddish
+procedure TForm1.SetFailedObject(NodeName: string);
+begin
+  var
+  ObjectFailing := ModelScene.Node(NodeName) as TAppearanceNode;
+  Mat2 := ObjectFailing.Material as TPhysicalMaterialNode;
 
-  StaticText3.Caption := DecodeX3DName('CastleEncoded_82$44$82$44$82$46$005');
 end;
 
 procedure TForm1.NewCamera(Sender: TObject);
 var
-  FaultFocusCam: TCastleCamera;
-  TargetPosition: TVector3;
-  TargetObject: TAppearanceNode;
+  FailingPart: TTransformNode;
+  CameraPosition, CameraDirection: TVector3;
+  Box: TBox3D;
+  APos, ADir, AUp: TVector3;
+  IntersectionDistance: Single;
 begin
+  Viewport2.FullSize := false;
+  // Now find the TTransformNode node by name
+  FailingPart := ModelScene.RootNode.FindNode('PowerCord') as TTransformNode;
 
+  if Assigned(FailingPart) then
+  begin
+    if not Viewport2.Exists then
+      Viewport2.Exists := True;
+
+    CameraPosition := FailingPart.Translation + Vector3(0, 0, 8);
+    CameraDirection := FailingPart.Translation - CameraPosition;
+    Viewport2.Camera.AnimateTo(CameraPosition, CameraDirection,
+      Vector3(0, 2, 0), 1.5);
+
+  end
+  else
+  begin
+    if Viewport2.Exists then
+      Viewport2.Exists := false;
+  end;
 end;
 
-procedure TForm1.Button3Click(Sender: TObject);
-var
-  Box: TBox3D;
-  AInitialPosition, AInitialDirection, AInitialUp, AGravityUp: TVector3;
+procedure TForm1.SetErrorButtonClick(Sender: TObject);
 begin
   // todo; Start selected animation.
+
+
   if failureDetected then
     failureDetected := false
   else
+  begin
     failureDetected := True;
+    SetFailedObject('MPowerCord');
+    NewCamera(Sender);
+  end;
+
+end;
+
+procedure TForm1.BlinkRed(NodeName: string);
+begin
+  // todo; Start selected animation.
+  var
+  a := ModelScene.Node(NodeName) as TAppearanceNode;
+  // turn red/white animation. But Figure out what the companys library is called
+
 end;
 
 procedure TForm1.StartStopAnimation(Sender: TObject);
@@ -261,36 +301,10 @@ var
   AnimationActive: Boolean;
 begin
   ModelScene.StopAnimation(false);
-
-
   // todo; figure out how to call the last animation and stop/start it again on command.
 
 end;
 
-function TForm1.GetSceneToFocusOn: TCastleScene;
-begin
-  // todo; Return node/mesh where the error occurs. So the camera can zoom into its box.
-
-  Result := ModelScene;
-end;
-
-procedure TForm1.ListBox2Click(Sender: TObject);
-var
-  ListBox: TListBox;
-  ItemIndex: Integer;
-  ItemValue: string;
-begin
-  ListBox := Sender as TListBox;
-  ItemIndex := ListBox.ItemIndex; // Gets the index of the selected item
-  if ItemIndex <> -1 then // -1 means no item is selected
-  begin
-    ItemValue := ListBox.Items[ItemIndex];
-    // Gets the value of the selected item
-
-    // do something with the ItemValue
-
-  end;
-end;
 
 procedure TForm1.ListBoxPlayAnimation(Sender: TObject);
 var
@@ -321,11 +335,6 @@ begin
       Result[Length(Result) - 1] := TCastleControl(Components[I]);
     end;
   end;
-end;
-
-procedure TForm1.PlayStatusLight;
-begin
-
 end;
 
 end.
