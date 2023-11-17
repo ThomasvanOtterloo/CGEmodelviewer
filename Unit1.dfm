@@ -23,7 +23,6 @@ object Form1: TForm1
     Height = 538
     Container.DesignUrl = 'castle-data:/test_3d.castle-user-interface'
     Align = alClient
-    ExplicitTop = -8
   end
   object SetErrorButton: TButton
     Left = 838
@@ -69,7 +68,7 @@ object Form1: TForm1
   object StaticText3: TStaticText
     Left = 8
     Top = 8
-    Width = 281
+    Width = 61
     Height = 19
     Caption = 'DebugLine'
     TabOrder = 5
@@ -77,7 +76,7 @@ object Form1: TForm1
   object FailureDection: TTimer
     Interval = 500
     OnTimer = FailureDetectionTimer
-    Left = 88
-    Top = 272
+    Left = 152
+    Top = 144
   end
 end

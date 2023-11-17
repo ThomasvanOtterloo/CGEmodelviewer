@@ -74,7 +74,7 @@
           "Z" : 1.2000000000000000E+001
         },
         "TimePlayingSpeed" : 2.0000000000000000E+000,
-        "URL" : "castle-data:/7.glb"
+        "URL" : "castle-data:/8.glb"
       },
       {
         "$$ClassName" : "TCastleCamera",
@@ -104,7 +104,6 @@
     ]
   },
   "Name" : "Viewport1",
-  "Transparent" : true,
   "$NonVisualComponents" : [
     {
       "$$ClassName" : "TCastleBackground",
@@ -254,16 +253,21 @@
     },
     "RotationPersistent" : {
       "$$ClassName" : "TCastleVector4RotationPersistent",
-      "W" : 1.0268139839172363E+000,
-      "X" : -1.4625184237957001E-001,
-      "Y" : 9.8637485504150391E-001,
-      "Z" : 7.5332634150981903E-002
+      "W" : 1.1615892648696899E+000,
+      "X" : -1.5684819221496582E-001,
+      "Y" : 9.8298722505569458E-001,
+      "Z" : 9.5575876533985138E-002
+    },
+    "ScalePersistent" : {
+      "$$ClassName" : "TCastleVector3Persistent",
+      "Y" : 9.9999994039535522E-001,
+      "Z" : 9.9999994039535522E-001
     },
     "TranslationPersistent" : {
       "$$ClassName" : "TCastleVector3Persistent",
-      "X" : 3.3760345458984375E+001,
-      "Y" : 1.1457036972045898E+001,
-      "Z" : 3.1926891326904297E+001
+      "X" : 6.4138397216796875E+001,
+      "Y" : 2.1188350677490234E+001,
+      "Z" : 3.1944877624511719E+001
     }
   },
   "InternalDesignNavigations[dnFly]" : {

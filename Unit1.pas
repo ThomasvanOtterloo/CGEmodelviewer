@@ -31,8 +31,7 @@ type
     procedure FailureDetectionTimer(Sender: TObject);
     procedure SetErrorButtonClick(Sender: TObject);
     procedure StartStopAnimation(Sender: TObject);
-    procedure Button1Click(Sender: TObject);
-    procedure NewCamera(Sender: TObject);
+    procedure NewCamera(Error: string);
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure ListBoxPlayAnimation(Sender: TObject);
   private
@@ -69,10 +68,11 @@ var
   failureDetected: Boolean;
   Mat: TPhysicalMaterialNode;
   Mat2: TPhysicalMaterialNode;
-  AppearanceAsAbstractNode: TAppearanceNode;
-  PowerSwitchnode: TAppearanceNode;
+  Mat2OriginalColor: TVector3;
+  StatusLightAppNode: TAppearanceNode;
+  FailedApNode: TAppearanceNode;
   Hdmi: TCastleTransform;
-  IsRed: Boolean;
+  LightIsRed: Boolean;
 
 implementation
 
@@ -157,6 +157,8 @@ var
   I: Integer;
 
 begin
+  FailureDection.Enabled := false;
+
   InitEditorComponents;
 
   // puts all animations in a list
@@ -169,12 +171,13 @@ begin
   // sets extra ErrorCamera in the world.
   Viewport2.Items := Viewport1.Items;
   Viewport2.Camera := ErrorCamera;
-  Viewport2.Exists := False;
+  Viewport2.Exists := false;
 
   // search for statuslight object
-  AppearanceAsAbstractNode := ModelScene.Node('StatusLight') as TAppearanceNode;
-  Mat := AppearanceAsAbstractNode.Material as TPhysicalMaterialNode;
-  IsRed := false;
+  StatusLightAppNode := ModelScene.Node('M_StatusLight') as TAppearanceNode;
+  Mat := StatusLightAppNode.Material as TPhysicalMaterialNode;
+
+  LightIsRed := false;
 end;
 
 procedure TForm1.FormKeyDown(Sender: TObject; var Key: Word;
@@ -197,49 +200,34 @@ begin
 end;
 
 procedure TForm1.FailureDetectionTimer(Sender: TObject);
-
 begin
-  // todo: Fix the camera Rotation. Overwrite the default camera navigation first.
-  // while loop create blinking light animiation.
-
   if failureDetected then
   begin
-    if IsRed then
+    if LightIsRed then
     begin
       Mat.BaseColor := Vector3(0.9, 0.9, 0.9); // almost white
-      Mat2.BaseColor := Vector3(0.9, 0.9, 0.9);
-      IsRed := false
+      Mat2.BaseColor := Mat2OriginalColor;
+      LightIsRed := false
     end
     else
     begin
-      Mat.BaseColor := Vector3(0.9, 0.1, 0.1); // reddish
+      Mat.BaseColor := Vector3(0.9, 0.1, 0.1); // red-ish
       Mat2.BaseColor := Vector3(0.9, 0.1, 0.1);
-      IsRed := True;
-    end;
+      LightIsRed := True;
+    end; // above here works fine :0
   end
-  else
-    Mat.BaseColor := Vector3(0, 1, 0); // green
-end;
-
-procedure TForm1.Button1Click(Sender: TObject);
-begin
-  // todo; randomize color of selected node
-   // turns the powerswitch button RED.
-   PowerSwitchnode := ModelScene.Node(DecodeX3DName('MPowerCord'))
-   as TAppearanceNode; // works
-   Mat2 := PowerSwitchnode.Material as TPhysicalMaterialNode;
-   Mat2.BaseColor := Vector3(0.9, 0.1, 0.1); // reddish
 end;
 
 procedure TForm1.SetFailedObject(NodeName: string);
 begin
-  var
-  ObjectFailing := ModelScene.Node(NodeName) as TAppearanceNode;
-  Mat2 := ObjectFailing.Material as TPhysicalMaterialNode;
+
+  FailedApNode := ModelScene.Node(NodeName) as TAppearanceNode;
+  Mat2 := FailedApNode.Material as TPhysicalMaterialNode;
+  Mat2OriginalColor := Mat2.BaseColor;
 
 end;
 
-procedure TForm1.NewCamera(Sender: TObject);
+procedure TForm1.NewCamera(Error: string);
 var
   FailingPart: TTransformNode;
   CameraPosition, CameraDirection: TVector3;
@@ -249,7 +237,10 @@ var
 begin
   Viewport2.FullSize := false;
   // Now find the TTransformNode node by name
-  FailingPart := ModelScene.RootNode.FindNode('PowerCord') as TTransformNode;
+  FailingPart := ModelScene.RootNode.FindNode(Error) as TTransformNode;
+
+  // correctly implement newcamera based on any new part of the object.
+  //todo;^
 
   if Assigned(FailingPart) then
   begin
@@ -258,6 +249,8 @@ begin
 
     CameraPosition := FailingPart.Translation + Vector3(0, 0, 8);
     CameraDirection := FailingPart.Translation - CameraPosition;
+
+
     Viewport2.Camera.AnimateTo(CameraPosition, CameraDirection,
       Vector3(0, 2, 0), 1.5);
 
@@ -270,17 +263,27 @@ begin
 end;
 
 procedure TForm1.SetErrorButtonClick(Sender: TObject);
+var
+  Error,PartAfter,SubString: string;
+  Position: Integer;
 begin
-  // todo; Start selected animation.
-
+  Error := 'SerialConnector'; // errordata containts location of error
 
   if failureDetected then
-    failureDetected := false
+  begin
+    failureDetected := false;
+    FailureDection.Enabled := false;
+    // reset colors to default
+    Mat2.BaseColor := Mat2OriginalColor;
+    Mat.BaseColor := Vector3(0, 1, 0);
+
+  end
   else
   begin
-    failureDetected := True;
-    SetFailedObject('MPowerCord');
-    NewCamera(Sender);
+    SetFailedObject('M_'+Error);
+    failureDetected := True; // This enables the animation in TTimer.
+    FailureDection.Enabled := True;
+    NewCamera(Error);
   end;
 
 end;
@@ -304,7 +307,6 @@ begin
   // todo; figure out how to call the last animation and stop/start it again on command.
 
 end;
-
 
 procedure TForm1.ListBoxPlayAnimation(Sender: TObject);
 var
