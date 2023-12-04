@@ -8,7 +8,8 @@ uses
   CastleTransform, CastleBoxes, CastleSceneCore, X3DLoadInternalUtils,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.CastleControl, CastleUIControls,
   Math, CastleComponentSerialize, CastleKeysMouse, CastleLog, CastleControls,
-  CastleVectors, CastleGLUtils, CastleColors, CastleScene, Vcl.StdCtrls,
+  CastleVectors, CastleGLUtils,CastleUtils,CastleTriangles,CastleRectangles,
+   CastleColors, CastleScene, Vcl.StdCtrls,  Generics.Collections,
   Vcl.ExtCtrls, CastleViewport;
 
 type
@@ -65,12 +66,19 @@ var
   ErrorCamera: TCastleCamera;
 
   OrbitRadius, OrbitSpeed, Angle: Double;
+
+  ErrorRootNode: TTransformNode; //TTransformNode RootNode;
+  ErrorgroupNode: TGroupNode; //FIrst child
+  ErrorShapeNode: TShapeNode; //Second child
+
+//  Mat2OriginalColor: TVector3;
+
   failureDetected: Boolean;
   Mat: TPhysicalMaterialNode;
-  Mat2: TPhysicalMaterialNode;
-  Mat2OriginalColor: TVector3;
+  ErrorMaterialNode: TPhysicalMaterialNode;
+  ErrorNodeOriginalColor: TVector3;
   StatusLightAppNode: TAppearanceNode;
-  FailedApNode: TAppearanceNode;
+  ErrorAppearanceNode: TAppearanceNode;
   Hdmi: TCastleTransform;
   LightIsRed: Boolean;
 
@@ -206,13 +214,13 @@ begin
     if LightIsRed then
     begin
       Mat.BaseColor := Vector3(0.9, 0.9, 0.9); // almost white
-      Mat2.BaseColor := Mat2OriginalColor;
+      ErrorMaterialNode.BaseColor := ErrorNodeOriginalColor;
       LightIsRed := false
     end
     else
     begin
       Mat.BaseColor := Vector3(0.9, 0.1, 0.1); // red-ish
-      Mat2.BaseColor := Vector3(0.9, 0.1, 0.1);
+      ErrorMaterialNode.BaseColor := Vector3(0.9, 0.1, 0.1);
       LightIsRed := True;
     end; // above here works fine :0
   end
@@ -220,40 +228,57 @@ end;
 
 procedure TForm1.SetFailedObject(NodeName: string);
 begin
-
-  FailedApNode := ModelScene.Node(NodeName) as TAppearanceNode;
-  Mat2 := FailedApNode.Material as TPhysicalMaterialNode;
-  Mat2OriginalColor := Mat2.BaseColor;
+//see X3D file
+  ErrorRootNode := ModelScene.RootNode.FindNode(NodeName) as TTransformNode; //Root
+    ErrorgroupNode:= ErrorRootNode.FdChildren[0] as TGroupNode;//first child
+      ErrorShapeNode := ErrorgroupNode.FdChildren[0] as TShapeNode; //Second child
+        ErrorAppearanceNode := ErrorShapeNode.Appearance as TAppearanceNode; //Third child
+  ErrorMaterialNode := ErrorAppearanceNode.Material as TPhysicalMaterialNode;
+  ErrorNodeOriginalColor := ErrorMaterialNode.BaseColor;
 
 end;
 
 procedure TForm1.NewCamera(Error: string);
 var
-  FailingPart: TTransformNode;
+
   CameraPosition, CameraDirection: TVector3;
   Box: TBox3D;
   APos, ADir, AUp: TVector3;
   IntersectionDistance: Single;
+  Shape: TShapeNode;
+  Group: TGroupnode;
+  trash: TVector3;
 begin
   Viewport2.FullSize := false;
-  // Now find the TTransformNode node by name
-  FailingPart := ModelScene.RootNode.FindNode(Error) as TTransformNode;
 
-  // correctly implement newcamera based on any new part of the object.
-  //todo;^
-
-  if Assigned(FailingPart) then
+  if Assigned(ErrorRootNode) then
   begin
     if not Viewport2.Exists then
       Viewport2.Exists := True;
 
-    CameraPosition := FailingPart.Translation + Vector3(0, 0, 8);
-    CameraDirection := FailingPart.Translation - CameraPosition;
+    Viewport1.Camera.GetWorldView(trash, ADir, AUp);
+    Box := Box3DAroundPoint(Box.Center, Box.Size.Max);
+
+//    if not Box.TryRayClosestIntersection(IntersectionDistance, Box.Center, -ADir) then
+//    begin
+//      { TryRayClosestIntersection may return false for box with size zero
+//        (though not observed in practice),
+//        only then ray from Box.Center may not hit one of box walls. }
+//      IntersectionDistance := 1;
+//      WritelnWarning('Ray from box center didn''t hit any of box walls');
+//    end;
+    APos := Box.Center - ADir * IntersectionDistance * 2;
+
+    //
+    //var textPosCenter := Shape.Scene.Center+ Vector3(0,0,8);
+    //var testPos := FailingPart.Translation + Vector3(0,0,10);
+    var textDir := Vector3(0,0,-1);
+    var testUp := Vector3(0,1,0);
 
 
-    Viewport2.Camera.AnimateTo(CameraPosition, CameraDirection,
-      Vector3(0, 2, 0), 1.5);
 
+    Viewport2.Camera.AnimateTo(CameraPosition, textDir,
+      testUp, 1.5);
   end
   else
   begin
@@ -264,23 +289,24 @@ end;
 
 procedure TForm1.SetErrorButtonClick(Sender: TObject);
 var
-  Error,PartAfter,SubString: string;
+  Error, PartAfter, SubString: string;
   Position: Integer;
 begin
-  Error := 'SerialConnector'; // errordata containts location of error
+  Error := 'PowerCord'; // errordata containts location of error
 
   if failureDetected then
-  begin
+  begin  // back to default
     failureDetected := false;
     FailureDection.Enabled := false;
     // reset colors to default
-    Mat2.BaseColor := Mat2OriginalColor;
+    // Mat2.BaseColor := Mat2OriginalColor;
     Mat.BaseColor := Vector3(0, 1, 0);
-
+     ErrorMaterialNode.BaseColor := ErrorNodeOriginalColor;
+     Viewport2.Exists := False;
   end
-  else
-  begin
-    SetFailedObject('M_'+Error);
+    else
+  begin // start error display
+    SetFailedObject(Error);
     failureDetected := True; // This enables the animation in TTimer.
     FailureDection.Enabled := True;
     NewCamera(Error);
