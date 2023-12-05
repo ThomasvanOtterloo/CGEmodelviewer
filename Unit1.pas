@@ -277,7 +277,7 @@ begin
 
 
 
-    Viewport2.Camera.AnimateTo(CameraPosition, textDir,
+    Viewport2.Camera.AnimateTo(Vector3(0,1,7), textDir,
       testUp, 1.5);
   end
   else
