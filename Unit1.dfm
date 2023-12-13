@@ -21,8 +21,11 @@ object Form1: TForm1
     Top = 0
     Width = 967
     Height = 538
+    Container.Requirements.MultiSampling = 4
     Container.DesignUrl = 'castle-data:/test_3d.castle-user-interface'
     Align = alClient
+    ExplicitLeft = -48
+    ExplicitTop = -8
   end
   object SetErrorButton: TButton
     Left = 838
@@ -77,11 +80,6 @@ object Form1: TForm1
     Interval = 500
     OnTimer = FailureDetectionTimer
     Left = 152
-    Top = 144
-  end
-  object OrbitModelTimer: TTimer
-    Interval = 100
-    Left = 224
-    Top = 32
+    Top = 88
   end
 end

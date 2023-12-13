@@ -74,8 +74,9 @@
           "Y" : 1.2000000000000000E+001,
           "Z" : 1.2000000000000000E+001
         },
+        "TimePlaying" : false,
         "TimePlayingSpeed" : 2.0000000000000000E+000,
-        "URL" : "file:///C:/Users/t.vanotterloo/Pictures/Blender%20Projects/System%20Enzenk/gltf's/Removedparts1.glb"
+        "URL" : "castle-data:/RoboFingers.glb"
       },
       {
         "$$ClassName" : "TCastleCamera",
@@ -325,21 +326,25 @@
     },
     "RotationPersistent" : {
       "$$ClassName" : "TCastleVector4RotationPersistent",
-      "W" : 9.9068742990493774E-001,
-      "X" : -5.9552103281021118E-001,
-      "Y" : 7.6630163192749023E-001,
-      "Z" : 2.4111552536487579E-001
+      "W" : 1.1173436641693115E+000,
+      "X" : -3.3270025253295898E-001,
+      "Y" : 9.2417395114898682E-001,
+      "Z" : 1.8765145540237427E-001
+    },
+    "ScalePersistent" : {
+      "$$ClassName" : "TCastleVector3Persistent",
+      "Z" : 1.0000001192092896E+000
     },
     "TranslationPersistent" : {
       "$$ClassName" : "TCastleVector3Persistent",
-      "X" : 9.2546813964843750E+002,
-      "Y" : 1.1356160888671875E+003,
-      "Z" : 1.1946385498046875E+003
+      "X" : 5.0999609375000000E+002,
+      "Y" : 2.6376037597656250E+002,
+      "Z" : 2.9362649536132812E+002
     }
   },
   "InternalDesignNavigations[dnFly]" : {
     "$$ClassName" : "TCastleWalkNavigationDesign",
-    "MoveSpeed" : 6.3095737457275391E+001,
+    "MoveSpeed" : 8.5769584655761719E+001,
     "Name" : ""
   },
   "InternalDesignNavigations[dnExamine]" : {

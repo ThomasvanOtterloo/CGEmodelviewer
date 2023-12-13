@@ -33,7 +33,6 @@ type
     FailureDection: TTimer;
     Button4: TButton;
     StaticText1: TStaticText;
-    OrbitModelTimer: TTimer;
 
     procedure FormCreate(Sender: TObject);
     procedure FailureDetectionTimer(Sender: TObject);
@@ -92,12 +91,12 @@ var
   ErrorAppearanceNode: TAppearanceNode;
   Hdmi: TCastleTransform;
   LightIsRed: boolean;
+  CamOrbitIsActive: boolean;
 
-
-  LookTarget, LookDir: TVector3;  //Motion vars for navigation
+  LookTarget, LookDir: TVector3; // Motion vars for navigation
   DesiredUp: TVector3 = (Data: (0, 1, 0));
 
-  TotalTimePassed: single = 0;
+  TotalTimePassed: Single = 0;
 
 implementation
 
@@ -114,6 +113,7 @@ begin
     Exit;
   if (buttonLeft in Event.Pressed) and (MainNavIsActive) then
   begin
+    CamOrbitIsActive := false;
     AngleRotate := -0.01 * (Event.Position.X - Event.OldPosition.X);
     LookTarget := Viewport1.Items.BoundingBox.Center;
     LookDir := LookTarget - Viewport1.Camera.Translation;
@@ -123,39 +123,45 @@ begin
       // new camera Translation (aka position)
       LookDir, // new camera Direction (the length of LookDir given here is ignored, ok)
       DesiredUp);
+
   end;
+
 end;
 
-procedure TCastleApp.Update(const SecondsPassed: Single; var HandleInput: boolean);
+procedure TCastleApp.Update(const SecondsPassed: Single;
+  var HandleInput: boolean);
 var
   CPos, ModelCenter, LookAtDirection: TVector3;
   DistanceToModel, OrbitSpeed, AngleU: Single;
 begin
   inherited;
 
-  ModelCenter := Viewport1.Items.BoundingBox.Center; // Center of the model
-  DistanceToModel := 650; // Orbit radius
-  OrbitSpeed := 10; // Degrees per second
+  if CamOrbitIsActive then
+  begin
+    ModelCenter := Viewport1.Items.BoundingBox.Center; // Center of the model
+//    LabelFPS.Caption := 'Size: ' + Viewport1.Items.BoundingBox.AverageSize.ToString;
+    DistanceToModel := Viewport1.Items.BoundingBox.AverageSize * 1.75; // Orbit radius
+    OrbitSpeed := 10; // Degrees per second
 
-  // Update total time passed
-  TotalTimePassed := TotalTimePassed + SecondsPassed;
+    // Update total time passed
+    TotalTimePassed := TotalTimePassed + SecondsPassed;
 
-  // Convert orbit speed to radians and calculate angle
-  AngleU := (OrbitSpeed * TotalTimePassed) * (Pi / 180); // Convert to radians
+    // Convert orbit speed to radians and calculate angle
+    AngleU := (OrbitSpeed * TotalTimePassed) * (Pi / 180); // Convert to radians
 
-  // Calculate new camera position for circular orbit
-  CPos.X := ModelCenter.X + DistanceToModel * Cos(AngleU);
-  CPos.Z := ModelCenter.Z + DistanceToModel * Sin(AngleU);
-  CPos.Y := ModelCenter.Y + 20; // Vertical position
+    // Calculate new camera position for circular orbit
+    CPos.X := ModelCenter.X + DistanceToModel * Cos(AngleU);
+    CPos.Z := ModelCenter.Z + DistanceToModel * Sin(AngleU);
+    CPos.Y := ModelCenter.Y + 20; // Vertical position
 
-  // Adjust camera look at direction
-  LookAtDirection := ModelCenter - CPos;
+    // Adjust camera look at direction
+    LookAtDirection := ModelCenter - CPos;
 
-  // Set the new camera view
-  Viewport1.Camera.SetView(CPos, LookAtDirection, DesiredUp);
+    // Set the new camera view
+    Viewport1.Camera.SetView(CPos, LookAtDirection, DesiredUp);
+  end;
+
 end;
-
-
 
 procedure TForm1.FormCreate(Sender: TObject);
 var
@@ -218,6 +224,9 @@ end;
 procedure TForm1.ExitFailDetectionWindow(Sender: TObject);
 begin
   Viewport2.Exists := false;
+  MainNavIsActive := True;
+  Viewport2.Navigation.Exists := false;
+  CamOrbitIsActive := True;
 end;
 
 procedure TForm1.FullscreenFailDetectionWindow(Sender: TObject);
@@ -231,7 +240,8 @@ var
 
 begin
   FailureDection.Enabled := false;
-  MainNavIsActive := true;
+  MainNavIsActive := True;
+  CamOrbitIsActive := True;
   InitEditorComponents;
 
   // puts all animations in a list
@@ -266,11 +276,13 @@ begin
   begin
     MainNavIsActive := false;
     Viewport2.Navigation.Exists := True;
+    CamOrbitIsActive := True;
   end
   else
   begin
     MainNavIsActive := True;
     Viewport2.Navigation.Exists := false;
+    CamOrbitIsActive := True;
   end;
 
 end;
@@ -294,33 +306,67 @@ begin
       Mat.BaseColor := Vector3(0.9, 0.9, 0.9); // almost white
       ErrorMaterialNode.BaseColor := ErrorNodeOriginalColor;
       LightIsRed := false
+
+      //
+
+
+
     end
     else
     begin
       Mat.BaseColor := Vector3(0.9, 0.1, 0.1); // red-ish
       ErrorMaterialNode.BaseColor := Vector3(0.9, 0.1, 0.1);
       LightIsRed := True;
-    end; // above here works fine :0
+    end;
   end
 end;
 
 procedure TForm1.SetFailedObject(NodeName: string);
 var
   EncodedString: string;
+    MeshNames: TStringList;
+    I: integer;
+    ShapeNodeCount: integer;
+    ChildNode: TShapeNode;
 begin
-  // see X3D file
-
-  ErrorRootNode := ModelScene.RootNode.FindNode(NodeName) as TTransformNode;
-  // Root
 
   ErrorRootNode := ModelScene.RootNode.FindNode(NodeName) as TTransformNode;
   // Root
   ErrorgroupNode := ErrorRootNode.FdChildren[0] as TGroupNode; // first child
   ErrorShapeNode := ErrorgroupNode.FdChildren[0] as TShapeNode; // Second child
+
+  labelFps.Caption := 'something: '+ ErrorgroupNode.FdChildren.Count.ToString;
+
+ ShapeNodeCount := 0;
+
+  // Iterate through the children of ErrorgroupNode
+  for I := 0 to ErrorgroupNode.FdChildren.Count - 1 do
+  begin
+    ChildNode := ErrorgroupNode.FdChildren[I] as TShapeNode;
+    // Check if the child is a TShapeNode
+    if ChildNode is TShapeNode then
+    begin
+      Inc(ShapeNodeCount);
+    end;
+  end;
+
+  // Update the label caption with the count of TShapeNode
+  labelFps.Caption := 'Number of ShapeNodes: ' + IntToStr(ShapeNodeCount);
+
+
+
+
+
+
+
   ErrorAppearanceNode := ErrorShapeNode.Appearance as TAppearanceNode;
   // Third child
   ErrorMaterialNode := ErrorAppearanceNode.Material as TPhysicalMaterialNode;
   ErrorNodeOriginalColor := ErrorMaterialNode.BaseColor;
+
+
+   // todo; get all shapes that are in a groupnode...
+  labelFps.Caption := 'somrthing:'+ ErrorgroupNode.FdChildren.InstanceSize.ToString;
 
 end;
 
@@ -342,18 +388,18 @@ begin
     if not Viewport2.Exists then
       Viewport2.Exists := True;
 
-    Viewport1.Camera.GetWorldView(trash, ADir, AUp);
-    Box := Box3DAroundPoint(Box.Center, Box.Size.Max);
-
-    // if not Box.TryRayClosestIntersection(IntersectionDistance, Box.Center, -ADir) then
-    // begin
-    // { TryRayClosestIntersection may return false for box with size zero
-    // (though not observed in practice),
-    // only then ray from Box.Center may not hit one of box walls. }
-    // IntersectionDistance := 1;
-    // WritelnWarning('Ray from box center didn''t hit any of box walls');
-    // end;
-    APos := Box.Center - ADir * IntersectionDistance * 2;
+//    Viewport1.Camera.GetWorldView(trash, ADir, AUp);
+//   // Box := Box3DAroundPoint(Box.Center, Box.Size.Max);
+//
+//    // if not Box.TryRayClosestIntersection(IntersectionDistance, Box.Center, -ADir) then
+//    // begin
+//    // { TryRayClosestIntersection may return false for box with size zero
+//    // (though not observed in practice),
+//    // only then ray from Box.Center may not hit one of box walls. }
+//    // IntersectionDistance := 1;
+//    // WritelnWarning('Ray from box center didn''t hit any of box walls');
+//    // end;
+//    APos := Box.Center - ADir * IntersectionDistance * 2;
 
     //
     // var textPosCenter := Shape.Scene.Center+ Vector3(0,0,8);
@@ -377,7 +423,8 @@ var
   Error, PartAfter, SubString: string;
   Position: Integer;
 begin
-  Error := 'Solid4'; // errordata containts location of error
+  Error := 'Fingers'; // As TransformNode - Look at X3D file.
+  // errordata containts location of error
 
   try
     if failureDetected then
@@ -399,7 +446,7 @@ begin
     end;
 
   except
-    showmessage('Error Naming location not found');
+    showmessage('BEEEP Object: "' + error + '" location not found');
 
   end;
 
