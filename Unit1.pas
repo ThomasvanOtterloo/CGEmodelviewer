@@ -8,15 +8,22 @@ uses
   CastleTransform, CastleBoxes, CastleSceneCore, X3DLoadInternalUtils,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.CastleControl, CastleUIControls,
   Math, CastleComponentSerialize, CastleKeysMouse, CastleLog, CastleControls,
-  CastleVectors, CastleGLUtils,CastleUtils,CastleTriangles,CastleRectangles,
-   CastleColors, CastleScene, Vcl.StdCtrls,  Generics.Collections,
+  CastleVectors, CastleGLUtils, CastleUtils, CastleTriangles, CastleRectangles,
+  CastleColors, CastleScene, Vcl.StdCtrls,
   Vcl.ExtCtrls, CastleViewport;
 
 type
   TCastleApp = class(TCastleView)
+  published // items added from editor
 
-    procedure Update(const SecondsPassed: Single; var HandleInput: Boolean);
   private
+    AngleX, AngleY: Single;
+    TargetPosition: TVector3;
+    RotationSpeedX, RotationSpeedY: Single;
+  public
+    procedure Update(const SecondsPassed: Single;
+      var HandleInput: boolean); override;
+    function Motion(const Event: TInputMotion): boolean; override;
   end;
 
   TForm1 = class(TForm)
@@ -26,7 +33,7 @@ type
     FailureDection: TTimer;
     Button4: TButton;
     StaticText1: TStaticText;
-    StaticText3: TStaticText;
+    OrbitModelTimer: TTimer;
 
     procedure FormCreate(Sender: TObject);
     procedure FailureDetectionTimer(Sender: TObject);
@@ -35,17 +42,18 @@ type
     procedure NewCamera(Error: string);
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure ListBoxPlayAnimation(Sender: TObject);
+
   private
     { Private declarations }
     GLWin: TCastleControl;
     GLView: TCastleApp;
 
     function FindCastleControls(o: TObject): TArray<TCastleControl>;
-    procedure SetupCamera;
     procedure InitVars;
     procedure InitEditorComponents;
     procedure BlinkRed(NodeName: string);
     procedure SetFailedObject(NodeName: string);
+    procedure StartErrorDetectionNav(Sender: TObject);
 
   public
     { Public declarations }
@@ -55,32 +63,41 @@ type
 
 var
   Form1: TForm1;
-  IsCastleControlOnForm: Boolean;
+  IsCastleControlOnForm: boolean;
   MainCamera: TCastleCamera;
   ModelScene: TCastleScene;
   Viewport1: TCastleViewport;
   Viewport2: TCastleViewport;
   MakeBiggerButton: TCastleButton;
   ExitButton: TCastleButton;
+  NavigateButton: TCastleButton;
   Items: TCastleRootTransform;
   ErrorCamera: TCastleCamera;
+  MainNavIsActive: boolean;
+  LabelFPS: TCastleLabel;
 
   OrbitRadius, OrbitSpeed, Angle: Double;
 
-  ErrorRootNode: TTransformNode; //TTransformNode RootNode;
-  ErrorgroupNode: TGroupNode; //FIrst child
-  ErrorShapeNode: TShapeNode; //Second child
+  ErrorRootNode: TTransformNode; // TTransformNode RootNode;
+  ErrorgroupNode: TGroupNode; // FIrst child
+  ErrorShapeNode: TShapeNode; // Second child
 
-//  Mat2OriginalColor: TVector3;
+  // Mat2OriginalColor: TVector3;
 
-  failureDetected: Boolean;
+  failureDetected: boolean;
   Mat: TPhysicalMaterialNode;
   ErrorMaterialNode: TPhysicalMaterialNode;
   ErrorNodeOriginalColor: TVector3;
   StatusLightAppNode: TAppearanceNode;
   ErrorAppearanceNode: TAppearanceNode;
   Hdmi: TCastleTransform;
-  LightIsRed: Boolean;
+  LightIsRed: boolean;
+
+
+  LookTarget, LookDir: TVector3;  //Motion vars for navigation
+  DesiredUp: TVector3 = (Data: (0, 1, 0));
+
+  TotalTimePassed: single = 0;
 
 implementation
 
@@ -88,15 +105,57 @@ implementation
 
 uses System.Generics.Collections;
 
-procedure TCastleApp.Update(const SecondsPassed: Single;
-  var HandleInput: Boolean);
+function TCastleApp.Motion(const Event: TInputMotion): boolean;
+var
+  AngleRotate: Single;
 begin
-  inherited Update(SecondsPassed, HandleInput);
+  Result := inherited;
+  if Result then
+    Exit;
+  if (buttonLeft in Event.Pressed) and (MainNavIsActive) then
+  begin
+    AngleRotate := -0.01 * (Event.Position.X - Event.OldPosition.X);
+    LookTarget := Viewport1.Items.BoundingBox.Center;
+    LookDir := LookTarget - Viewport1.Camera.Translation;
+    LookDir := RotatePointAroundAxis(Vector4(DesiredUp, AngleRotate), LookDir);
 
-  if Container.Pressed[Key7] then
-    ModelScene.Exists := false;
-
+    Viewport1.Camera.SetView(LookTarget - LookDir,
+      // new camera Translation (aka position)
+      LookDir, // new camera Direction (the length of LookDir given here is ignored, ok)
+      DesiredUp);
+  end;
 end;
+
+procedure TCastleApp.Update(const SecondsPassed: Single; var HandleInput: boolean);
+var
+  CPos, ModelCenter, LookAtDirection: TVector3;
+  DistanceToModel, OrbitSpeed, AngleU: Single;
+begin
+  inherited;
+
+  ModelCenter := Viewport1.Items.BoundingBox.Center; // Center of the model
+  DistanceToModel := 650; // Orbit radius
+  OrbitSpeed := 10; // Degrees per second
+
+  // Update total time passed
+  TotalTimePassed := TotalTimePassed + SecondsPassed;
+
+  // Convert orbit speed to radians and calculate angle
+  AngleU := (OrbitSpeed * TotalTimePassed) * (Pi / 180); // Convert to radians
+
+  // Calculate new camera position for circular orbit
+  CPos.X := ModelCenter.X + DistanceToModel * Cos(AngleU);
+  CPos.Z := ModelCenter.Z + DistanceToModel * Sin(AngleU);
+  CPos.Y := ModelCenter.Y + 20; // Vertical position
+
+  // Adjust camera look at direction
+  LookAtDirection := ModelCenter - CPos;
+
+  // Set the new camera view
+  Viewport1.Camera.SetView(CPos, LookAtDirection, DesiredUp);
+end;
+
+
 
 procedure TForm1.FormCreate(Sender: TObject);
 var
@@ -121,7 +180,6 @@ begin
   GLWin.Container.View := GLView;
 
   InitVars;
-  SetupCamera; // todo;
 
 end;
 
@@ -146,6 +204,13 @@ begin
 
   ExitButton := CastleControl.Container.DesignedComponent('ExitButton')
     as TCastleButton;
+
+  LabelFPS := CastleControl.Container.DesignedComponent('LabelFPS')
+    as TCastleLabel;
+  NavigateButton := CastleControl.Container.DesignedComponent('NavigateButton')
+    as TCastleButton;
+  NavigateButton.OnClick := StartErrorDetectionNav;
+  Viewport2.Navigation.Exists := false;
   ExitButton.OnClick := ExitFailDetectionWindow;
 
 end;
@@ -166,7 +231,7 @@ var
 
 begin
   FailureDection.Enabled := false;
-
+  MainNavIsActive := true;
   InitEditorComponents;
 
   // puts all animations in a list
@@ -179,13 +244,35 @@ begin
   // sets extra ErrorCamera in the world.
   Viewport2.Items := Viewport1.Items;
   Viewport2.Camera := ErrorCamera;
-  Viewport2.Exists := false;
+  Viewport2.Exists := True;
 
   // search for statuslight object
-  StatusLightAppNode := ModelScene.Node('M_StatusLight') as TAppearanceNode;
-  Mat := StatusLightAppNode.Material as TPhysicalMaterialNode;
+
+  try
+    StatusLightAppNode := ModelScene.Node('M_StatusLight') as TAppearanceNode;
+    Mat := StatusLightAppNode.Material as TPhysicalMaterialNode;
+
+  except
+    showmessage('StatusLight not found.');
+  end;
 
   LightIsRed := false;
+end;
+
+procedure TForm1.StartErrorDetectionNav(Sender: TObject);
+begin
+
+  if MainNavIsActive then
+  begin
+    MainNavIsActive := false;
+    Viewport2.Navigation.Exists := True;
+  end
+  else
+  begin
+    MainNavIsActive := True;
+    Viewport2.Navigation.Exists := false;
+  end;
+
 end;
 
 procedure TForm1.FormKeyDown(Sender: TObject; var Key: Word;
@@ -196,15 +283,6 @@ begin
   begin
     ModelScene.Exists := not ModelScene.Exists;
   end;
-end;
-
-procedure TForm1.SetupCamera;
-var
-  Nav: TCastleNavigation;
-begin
-  // TODO: Create smooth camera navtigation.
-  // And position camera based on size of model.
-
 end;
 
 procedure TForm1.FailureDetectionTimer(Sender: TObject);
@@ -227,12 +305,20 @@ begin
 end;
 
 procedure TForm1.SetFailedObject(NodeName: string);
+var
+  EncodedString: string;
 begin
-//see X3D file
-  ErrorRootNode := ModelScene.RootNode.FindNode(NodeName) as TTransformNode; //Root
-    ErrorgroupNode:= ErrorRootNode.FdChildren[0] as TGroupNode;//first child
-      ErrorShapeNode := ErrorgroupNode.FdChildren[0] as TShapeNode; //Second child
-        ErrorAppearanceNode := ErrorShapeNode.Appearance as TAppearanceNode; //Third child
+  // see X3D file
+
+  ErrorRootNode := ModelScene.RootNode.FindNode(NodeName) as TTransformNode;
+  // Root
+
+  ErrorRootNode := ModelScene.RootNode.FindNode(NodeName) as TTransformNode;
+  // Root
+  ErrorgroupNode := ErrorRootNode.FdChildren[0] as TGroupNode; // first child
+  ErrorShapeNode := ErrorgroupNode.FdChildren[0] as TShapeNode; // Second child
+  ErrorAppearanceNode := ErrorShapeNode.Appearance as TAppearanceNode;
+  // Third child
   ErrorMaterialNode := ErrorAppearanceNode.Material as TPhysicalMaterialNode;
   ErrorNodeOriginalColor := ErrorMaterialNode.BaseColor;
 
@@ -246,7 +332,7 @@ var
   APos, ADir, AUp: TVector3;
   IntersectionDistance: Single;
   Shape: TShapeNode;
-  Group: TGroupnode;
+  Group: TGroupNode;
   trash: TVector3;
 begin
   Viewport2.FullSize := false;
@@ -259,26 +345,25 @@ begin
     Viewport1.Camera.GetWorldView(trash, ADir, AUp);
     Box := Box3DAroundPoint(Box.Center, Box.Size.Max);
 
-//    if not Box.TryRayClosestIntersection(IntersectionDistance, Box.Center, -ADir) then
-//    begin
-//      { TryRayClosestIntersection may return false for box with size zero
-//        (though not observed in practice),
-//        only then ray from Box.Center may not hit one of box walls. }
-//      IntersectionDistance := 1;
-//      WritelnWarning('Ray from box center didn''t hit any of box walls');
-//    end;
+    // if not Box.TryRayClosestIntersection(IntersectionDistance, Box.Center, -ADir) then
+    // begin
+    // { TryRayClosestIntersection may return false for box with size zero
+    // (though not observed in practice),
+    // only then ray from Box.Center may not hit one of box walls. }
+    // IntersectionDistance := 1;
+    // WritelnWarning('Ray from box center didn''t hit any of box walls');
+    // end;
     APos := Box.Center - ADir * IntersectionDistance * 2;
 
     //
-    //var textPosCenter := Shape.Scene.Center+ Vector3(0,0,8);
-    //var testPos := FailingPart.Translation + Vector3(0,0,10);
-    var textDir := Vector3(0,0,-1);
-    var testUp := Vector3(0,1,0);
+    // var textPosCenter := Shape.Scene.Center+ Vector3(0,0,8);
+    // var testPos := FailingPart.Translation + Vector3(0,0,10);
+    var
+    textDir := Vector3(0, 0, -1);
+    var
+    testUp := Vector3(0, 1, 0);
 
-
-
-    Viewport2.Camera.AnimateTo(Vector3(0,1,7), textDir,
-      testUp, 1.5);
+    Viewport2.Camera.AnimateTo(Vector3(0, 1, 7), textDir, testUp, 1.5);
   end
   else
   begin
@@ -292,24 +377,30 @@ var
   Error, PartAfter, SubString: string;
   Position: Integer;
 begin
-  Error := 'PowerCord'; // errordata containts location of error
+  Error := 'Solid4'; // errordata containts location of error
 
-  if failureDetected then
-  begin  // back to default
-    failureDetected := false;
-    FailureDection.Enabled := false;
-    // reset colors to default
-    // Mat2.BaseColor := Mat2OriginalColor;
-    Mat.BaseColor := Vector3(0, 1, 0);
-     ErrorMaterialNode.BaseColor := ErrorNodeOriginalColor;
-     Viewport2.Exists := False;
-  end
+  try
+    if failureDetected then
+    begin // back to default
+      failureDetected := false;
+      FailureDection.Enabled := false;
+      // reset colors to default
+      // Mat2.BaseColor := Mat2OriginalColor;
+      Mat.BaseColor := Vector3(0, 1, 0);
+      ErrorMaterialNode.BaseColor := ErrorNodeOriginalColor;
+      Viewport2.Exists := false;
+    end
     else
-  begin // start error display
-    SetFailedObject(Error);
-    failureDetected := True; // This enables the animation in TTimer.
-    FailureDection.Enabled := True;
-    NewCamera(Error);
+    begin // start error display
+      SetFailedObject(Error);
+      failureDetected := True; // This enables the animation in TTimer.
+      FailureDection.Enabled := True;
+      NewCamera(Error);
+    end;
+
+  except
+    showmessage('Error Naming location not found');
+
   end;
 
 end;
@@ -327,7 +418,7 @@ procedure TForm1.StartStopAnimation(Sender: TObject);
 var
   NewViewport: TCastleViewport;
   SceneToFocus: TCastleScene;
-  AnimationActive: Boolean;
+  AnimationActive: boolean;
 begin
   ModelScene.StopAnimation(false);
   // todo; figure out how to call the last animation and stop/start it again on command.

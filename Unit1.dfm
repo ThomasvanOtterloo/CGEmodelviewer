@@ -79,4 +79,9 @@ object Form1: TForm1
     Left = 152
     Top = 144
   end
+  object OrbitModelTimer: TTimer
+    Interval = 100
+    Left = 224
+    Top = 32
+  end
 end
