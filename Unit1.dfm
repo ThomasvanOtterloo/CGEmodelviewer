@@ -24,8 +24,6 @@ object Form1: TForm1
     Container.Requirements.MultiSampling = 4
     Container.DesignUrl = 'castle-data:/test_3d.castle-user-interface'
     Align = alClient
-    ExplicitLeft = -48
-    ExplicitTop = -8
   end
   object SetErrorButton: TButton
     Left = 838
