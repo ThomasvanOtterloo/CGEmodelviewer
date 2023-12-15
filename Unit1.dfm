@@ -37,10 +37,10 @@ object Form1: TForm1
     OnClick = SetErrorButtonClick
   end
   object ListBox1: TListBox
-    Left = 838
-    Top = 280
-    Width = 121
-    Height = 97
+    Left = 544
+    Top = 136
+    Width = 415
+    Height = 241
     Anchors = [akRight, akBottom]
     ItemHeight = 15
     TabOrder = 2
@@ -57,22 +57,13 @@ object Form1: TForm1
     TabOrder = 3
     OnClick = StartStopAnimation
   end
-  object StaticText1: TStaticText
-    Left = 838
-    Top = 255
-    Width = 65
-    Height = 19
-    Anchors = [akRight, akBottom]
-    Caption = 'Animations'
-    TabOrder = 4
-  end
   object StaticText3: TStaticText
     Left = 8
     Top = 8
     Width = 61
     Height = 19
     Caption = 'DebugLine'
-    TabOrder = 5
+    TabOrder = 4
   end
   object FailureDection: TTimer
     Interval = 500

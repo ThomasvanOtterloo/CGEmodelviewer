@@ -14,7 +14,7 @@ uses
 
 type
   TShapeNodeColor = record
-    PshysicalMatNode: TPhysicalMaterialNode;
+    PhysicalMatNode: TPhysicalMaterialNode;
     OriginalColor: TVector3;
   end;
 
@@ -38,7 +38,6 @@ type
     ListBox1: TListBox;
     FailureDection: TTimer;
     Button4: TButton;
-    StaticText1: TStaticText;
     StaticText3: TStaticText;
     procedure FormCreate(Sender: TObject);
     procedure FailureDetectionTimer(Sender: TObject);
@@ -56,7 +55,6 @@ type
     function FindCastleControls(o: TObject): TArray<TCastleControl>;
     procedure InitVars;
     procedure InitEditorComponents;
-    procedure BlinkRed(NodeName: string);
     procedure SetFailedObject(NodeName: string);
     procedure StartErrorDetectionNav(Sender: TObject);
 
@@ -86,7 +84,6 @@ var
 
   ErrorRootNode: TTransformNode; // TTransformNode RootNode;
   ErrorgroupNode: TGroupNode; // FIrst child
-  ErrorShapeNode: TShapeNode; // Second child
 
   failureDetected: boolean;
   Mat: TPhysicalMaterialNode;
@@ -242,16 +239,15 @@ end;
 procedure TForm1.InitVars;
 var
   I: Integer;
-
 begin
   FailureDection.Enabled := false;
   MainNavIsActive := True;
   CamOrbitIsActive := True;
   InitEditorComponents;
 
-  // puts all animations in a list
-  for I := 0 to ModelScene.AnimationsList.Count - 1 do
-    ListBox1.AddItem(ModelScene.AnimationsList[I], nil);
+  // // puts all animations in a list
+  // for I := 0 to ModelScene.AnimationsList.Count - 1 do
+  // ListBox1.AddItem(ModelScene.AnimationsList[I], nil);
 
   // failure should be false on default.
   failureDetected := false;
@@ -310,55 +306,84 @@ begin
   begin
     if LightIsRed then
     begin
-      Mat.BaseColor := Vector3(0.9, 0.9, 0.9); // almost white
+      if Mat <> nil then
+        Mat.BaseColor := Vector3(0.9, 0.9, 0.9); // almost white
       LightIsRed := false;
       for I := 0 to Length(ShapeNodeColors) - 1 do
         // set error material node color to original color
-        ShapeNodeColors[I].PshysicalMatNode.BaseColor := ShapeNodeColors[I]
+        ShapeNodeColors[I].PhysicalMatNode.BaseColor := ShapeNodeColors[I]
           .OriginalColor;
+
     end
-      else
+    else
     begin
-      Mat.BaseColor := Vector3(0.9, 0.1, 0.1); // red-ish
+      if Mat <> nil then
+        Mat.BaseColor := Vector3(0.9, 0.1, 0.1); // red-ish
       LightIsRed := True;
       for I := 0 to Length(ShapeNodeColors) - 1 do
         // set error material node color to original color
-        ShapeNodeColors[I].PshysicalMatNode.BaseColor := Vector3(0.9, 0.1, 0.1);
+        ShapeNodeColors[I].PhysicalMatNode.BaseColor := Vector3(0.9, 0.1, 0.1);
+
     end;
   end
 end;
 
 procedure TForm1.SetFailedObject(NodeName: string);
+// Gripper Frame, Precise, PF400.ipt
 var
-  EncodedString: string;
-  MeshNames: TStringList;
-  I: Integer;
-  ShapeNodeCount: Integer;
-  ChildNode: TShapeNode;
+  I, LengthRootArray: Integer;
   newNodeColor: TShapeNodeColor;
   ShapeNode: TShapeNode;
-  ErrorAppearanceNodeTest: TAppearanceNode;
-  ErrorMaterialNodeTest: TPhysicalMaterialNode;
+  ErrorAppearanceNode: TAppearanceNode;
+  ErrorMaterialNode: TPhysicalMaterialNode;
+
 begin
-  ErrorRootNode := ModelScene.RootNode.FindNode(NodeName) as TTransformNode; // Root
-  ErrorgroupNode := ErrorRootNode.FdChildren[0] as TGroupNode; // first child
+  try
+    ErrorRootNode := ModelScene.RootNode.FindNode(NodeName) as TTransformNode;
 
-  // Iterate through the children of ErrorgroupNode
-  for I := 0 to ErrorgroupNode.FdChildren.Count - 1 do
-  begin
-    ShapeNode := ErrorgroupNode.FdChildren[I] as TShapeNode;
-    ErrorAppearanceNodeTest := ShapeNode.Appearance as TAppearanceNode;
-    ErrorMaterialNodeTest := ErrorAppearanceNodeTest.Material as
-      TPhysicalMaterialNode;
-
-    newNodeColor.PshysicalMatNode :=
-      ErrorMaterialNodeTest as TPhysicalMaterialNode; // stored the shape.
-    newNodeColor.OriginalColor := ErrorMaterialNodeTest.BaseColor;
-
-    SetLength(ShapeNodeColors, I + 1);
-    ShapeNodeColors[I] := newNodeColor;
+    // Root
+    while (ErrorRootNode <> nil) and (ErrorRootNode.FdChildren.Count > 0) and
+      (ErrorRootNode.FdChildren[0] is TTransformNode) do
+    begin
+      ErrorRootNode := ErrorRootNode.FdChildren[0] as TTransformNode;
+    end; // recursive pattern
+  except
+    showmessage('Given part name is not found in X3D file.')
   end;
 
+  try
+    ErrorgroupNode := ErrorRootNode.FdChildren[0] as TGroupNode; // first child
+    for I := 0 to ErrorgroupNode.FdChildren.Count - 1 do
+    begin
+      ShapeNode := ErrorgroupNode.FdChildren[I] as TShapeNode;
+      ErrorAppearanceNode := ShapeNode.Appearance as TAppearanceNode;
+      ErrorMaterialNode := ErrorAppearanceNode.Material as
+        TPhysicalMaterialNode;
+      newNodeColor.PhysicalMatNode :=
+        ErrorMaterialNode as TPhysicalMaterialNode;
+      newNodeColor.OriginalColor := ErrorMaterialNode.BaseColor;
+
+      SetLength(ShapeNodeColors, I + 1);
+      ShapeNodeColors[I] := newNodeColor;
+    end;
+  except
+    showmessage
+      ('Something went wrong creating the array of shapes. (children of TransformNode)');
+    if ErrorRootNode.FdChildren.Count > 0 then
+
+      showmessage
+        ('TransformNode Found, But something went wrong. Amount of TransformNodes in root:'
+        + ErrorRootNode.FdChildren.Count.ToString);
+  end;
+  try
+   
+
+
+
+  except
+    on E: Exception do
+      showmessage(E.Message);
+  end;
 end;
 
 procedure TForm1.NewCamera(Error: string);
@@ -371,6 +396,8 @@ var
   Shape: TShapeNode;
   Group: TGroupNode;
   trash: TVector3;
+  ShapeList: TShapeList;
+  I: Integer;
 begin
   Viewport2.FullSize := false;
 
@@ -378,29 +405,32 @@ begin
   begin
     if not Viewport2.Exists then
       Viewport2.Exists := True;
+    try
 
-    // Viewport1.Camera.GetWorldView(trash, ADir, AUp);
-    // // Box := Box3DAroundPoint(Box.Center, Box.Size.Max);
-    //
-    // // if not Box.TryRayClosestIntersection(IntersectionDistance, Box.Center, -ADir) then
-    // // begin
-    // // { TryRayClosestIntersection may return false for box with size zero
-    // // (though not observed in practice),
-    // // only then ray from Box.Center may not hit one of box walls. }
-    // // IntersectionDistance := 1;
-    // // WritelnWarning('Ray from box center didn''t hit any of box walls');
-    // // end;
-    // APos := Box.Center - ADir * IntersectionDistance * 2;
+     ShapeList := ModelScene.Shapes.TraverseList(True, True, True);
 
-    //
-    // var textPosCenter := Shape.Scene.Center+ Vector3(0,0,8);
-    // var testPos := FailingPart.Translation + Vector3(0,0,10);
+    for I := 0 to ModelScene.Shapes.TraverseList(True, True, True).Count - 1 do
+    begin
+      if ShapeList[I].GeometryGrandParentNode.X3DName = ErrorGroupNode.X3DName then
+      begin
+        ListBox1.AddItem('NODEMATCHFOUND' + ShapeList[I].NiceName,
+          ShapeList[I]);
+        ListBox1.AddItem('bbox.center: '+ ShapeList[I].BoundingBox.Transform(modelScene.WorldTransform).ToNiceStr, ShapeList[I]);
+      end;
+    end;
+
+
+    except
+      on E: Exception do
+        showmessage('Error: ' + E.Message);
+    end;
+
     var
     textDir := Vector3(0, 0, -1);
     var
     testUp := Vector3(0, 1, 0);
 
-    Viewport2.Camera.AnimateTo(Vector3(0, 1, 7), textDir, testUp, 1.5);
+    Viewport2.Camera.AnimateTo(LookTarget - LookDir, LookDir, DesiredUp, 1.5);
   end
   else
   begin
@@ -412,9 +442,10 @@ end;
 procedure TForm1.SetErrorButtonClick(Sender: TObject);
 var
   Error, PartAfter, SubString: string;
-  Position,I: Integer;
+  Position, I: Integer;
 begin
-  Error := 'Fingers'; // As TransformNode - Look at X3D file.
+  Error := 'Fingers';
+  // As TransformNode - Look at X3D file.    added :1 cuz thats the transform above it
   // errordata containts location of error
 
   try
@@ -424,10 +455,10 @@ begin
       FailureDection.Enabled := false;
       Mat.BaseColor := Vector3(0, 1, 0);
       for I := 0 to Length(ShapeNodeColors) - 1 do
-        // set error material node color to original color
-        ShapeNodeColors[I].PshysicalMatNode.BaseColor := ShapeNodeColors[I]
-          .OriginalColor;
+        ShapeNodeColors[I].PhysicalMatNode.BaseColor := ShapeNodeColors[I]
+          .OriginalColor; // set error material node color to original color
       Viewport2.Exists := false;
+      SetLength(ShapeNodeColors, 0)
     end
     else
     begin // start error display
@@ -444,24 +475,9 @@ begin
 
 end;
 
-procedure TForm1.BlinkRed(NodeName: string);
-begin
-  // todo; Start selected animation.
-  var
-  a := ModelScene.Node(NodeName) as TAppearanceNode;
-  // turn red/white animation. But Figure out what the companys library is called
-
-end;
-
 procedure TForm1.StartStopAnimation(Sender: TObject);
-var
-  NewViewport: TCastleViewport;
-  SceneToFocus: TCastleScene;
-  AnimationActive: boolean;
 begin
   ModelScene.StopAnimation(false);
-  // todo; figure out how to call the last animation and stop/start it again on command.
-
 end;
 
 procedure TForm1.ListBoxPlayAnimation(Sender: TObject);
