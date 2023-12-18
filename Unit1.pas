@@ -375,15 +375,34 @@ begin
         ('TransformNode Found, But something went wrong. Amount of TransformNodes in root:'
         + ErrorRootNode.FdChildren.Count.ToString);
   end;
+end;
+
+function CalculateSumBbox(): TBox3D;
+var
+  I: Integer;
+  ShapeList: TShapeList;
+  SumBox: TBox3D;
+  CenterPoint: TVector3;
+
+begin
   try
-   
+    ShapeList := ModelScene.Shapes.TraverseList(True, True, True);
+    for I := 0 to ModelScene.Shapes.TraverseList(True, True, True).Count - 1 do
+    begin
+      if ShapeList[I].GeometryGrandParentNode.X3DName = ErrorgroupNode.X3DName
+      then
+      begin
+        // ShapeList[I].BoundingBox.Transform(modelScene.WorldTransform); //value bbox
+        SumBox := SumBox + ShapeList[I].BoundingBox;
 
-
-
+      end;
+    end;
+    Result := SumBox.Transform(ModelScene.WorldTransform);
   except
     on E: Exception do
-      showmessage(E.Message);
+      showmessage('Error: ' + E.Message);
   end;
+
 end;
 
 procedure TForm1.NewCamera(Error: string);
@@ -395,9 +414,12 @@ var
   IntersectionDistance: Single;
   Shape: TShapeNode;
   Group: TGroupNode;
-  trash: TVector3;
-  ShapeList: TShapeList;
+  BboxSize: TBox3D;
   I: Integer;
+
+  FLookAtTarger, FLookDir, X: TVector3;
+  FDistanceToModel: Single;
+
 begin
   Viewport2.FullSize := false;
 
@@ -405,32 +427,14 @@ begin
   begin
     if not Viewport2.Exists then
       Viewport2.Exists := True;
-    try
 
-     ShapeList := ModelScene.Shapes.TraverseList(True, True, True);
+    BboxSize := CalculateSumBbox();
+    FLookAtTarger := BboxSize.Center; // Target is the center of the Bbox
+    FLookDir := FLookAtTarger - Viewport2.Camera.Translation;
+    FDistanceToModel := BboxSize.AverageSize * 2;
+    APos := FLookAtTarger - (Normalized(FLookDir) * FDistanceToModel);
+    Viewport2.Camera.AnimateTo(APos, FLookDir, DesiredUp, 1.5);
 
-    for I := 0 to ModelScene.Shapes.TraverseList(True, True, True).Count - 1 do
-    begin
-      if ShapeList[I].GeometryGrandParentNode.X3DName = ErrorGroupNode.X3DName then
-      begin
-        ListBox1.AddItem('NODEMATCHFOUND' + ShapeList[I].NiceName,
-          ShapeList[I]);
-        ListBox1.AddItem('bbox.center: '+ ShapeList[I].BoundingBox.Transform(modelScene.WorldTransform).ToNiceStr, ShapeList[I]);
-      end;
-    end;
-
-
-    except
-      on E: Exception do
-        showmessage('Error: ' + E.Message);
-    end;
-
-    var
-    textDir := Vector3(0, 0, -1);
-    var
-    testUp := Vector3(0, 1, 0);
-
-    Viewport2.Camera.AnimateTo(LookTarget - LookDir, LookDir, DesiredUp, 1.5);
   end
   else
   begin
@@ -444,7 +448,7 @@ var
   Error, PartAfter, SubString: string;
   Position, I: Integer;
 begin
-  Error := 'Fingers';
+  Error := '2_Gripper Frame, Precise, PF400';
   // As TransformNode - Look at X3D file.    added :1 cuz thats the transform above it
   // errordata containts location of error
 

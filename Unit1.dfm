@@ -37,10 +37,10 @@ object Form1: TForm1
     OnClick = SetErrorButtonClick
   end
   object ListBox1: TListBox
-    Left = 544
-    Top = 136
-    Width = 415
-    Height = 241
+    Left = 800
+    Top = 264
+    Width = 159
+    Height = 113
     Anchors = [akRight, akBottom]
     ItemHeight = 15
     TabOrder = 2
