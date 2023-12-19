@@ -23,9 +23,6 @@ type
   published // items added from editor
 
   private
-    AngleX, AngleY: Single;
-    TargetPosition: TVector3;
-    RotationSpeedX, RotationSpeedY: Single;
   public
     procedure Update(const SecondsPassed: Single;
       var HandleInput: boolean); override;
@@ -168,9 +165,6 @@ end;
 procedure TForm1.FormCreate(Sender: TObject);
 var
   c: TArray<TCastleControl>;
-  Scene: TCastleScene;
-  Light: TAbstractLightNode;
-  NewCamera: TCastleCamera;
 begin
   IsCastleControlOnForm := True;
   c := FindCastleControls(Self);
@@ -331,7 +325,7 @@ end;
 procedure TForm1.SetFailedObject(NodeName: string);
 // Gripper Frame, Precise, PF400.ipt
 var
-  I, LengthRootArray: Integer;
+  I: Integer;
   newNodeColor: TShapeNodeColor;
   ShapeNode: TShapeNode;
   ErrorAppearanceNode: TAppearanceNode;
@@ -382,7 +376,6 @@ var
   I: Integer;
   ShapeList: TShapeList;
   SumBox: TBox3D;
-  CenterPoint: TVector3;
 
 begin
   try
@@ -407,17 +400,9 @@ end;
 
 procedure TForm1.NewCamera(Error: string);
 var
-
-  CameraPosition, CameraDirection: TVector3;
-  Box: TBox3D;
-  APos, ADir, AUp: TVector3;
-  IntersectionDistance: Single;
-  Shape: TShapeNode;
-  Group: TGroupNode;
+  APos: TVector3;
   BboxSize: TBox3D;
-  I: Integer;
-
-  FLookAtTarger, FLookDir, X: TVector3;
+  FLookAtTarger, FLookDir: TVector3;
   FDistanceToModel: Single;
 
 begin
@@ -445,8 +430,8 @@ end;
 
 procedure TForm1.SetErrorButtonClick(Sender: TObject);
 var
-  Error, PartAfter, SubString: string;
-  Position, I: Integer;
+  Error : string;
+   I: Integer;
 begin
   Error := '2_Gripper Frame, Precise, PF400';
   // As TransformNode - Look at X3D file.    added :1 cuz thats the transform above it
