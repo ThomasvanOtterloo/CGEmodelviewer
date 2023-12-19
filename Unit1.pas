@@ -4,13 +4,17 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
-  System.Classes, Vcl.Graphics, CastleShapes, CastleCameras, X3DNodes, X3DLoad,
-  CastleTransform, CastleBoxes, CastleSceneCore, X3DLoadInternalUtils,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.CastleControl, CastleUIControls,
-  Math, CastleComponentSerialize, CastleKeysMouse, CastleLog, CastleControls,
-  CastleVectors, CastleGLUtils, CastleUtils, CastleTriangles, CastleRectangles,
-  CastleColors, CastleScene, Vcl.StdCtrls,
-  Vcl.ExtCtrls, CastleViewport;
+  System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
+  Vcl.StdCtrls, Vcl.ExtCtrls,
+
+  CastleShapes, CastleCameras, X3DNodes, X3DLoad, CastleTransform,
+  CastleBoxes, CastleSceneCore, X3DLoadInternalUtils, CastleUIControls,
+  CastleComponentSerialize, CastleKeysMouse, CastleLog, CastleControls,
+  CastleVectors, CastleGLUtils, CastleUtils, CastleTriangles,
+  CastleRectangles, CastleColors, CastleScene, CastleViewport,
+
+  Math, Vcl.CastleControl;
+
 
 type
   TShapeNodeColor = record
@@ -22,7 +26,13 @@ type
   TCastleApp = class(TCastleView)
   published // items added from editor
 
-  private
+  private const
+    OrbitMultiplier = 1.75;
+    VerticalCameraOffset = 20;
+    RadiansPerDegree = Pi / 180;
+
+    procedure UpdateMainCameraPosition(const ModelCenter: TVector3;
+      const DistanceToModel, AngleU: Single);
   public
     procedure Update(const SecondsPassed: Single;
       var HandleInput: boolean); override;
@@ -41,7 +51,6 @@ type
     procedure SetErrorButtonClick(Sender: TObject);
     procedure StartStopAnimation(Sender: TObject);
     procedure NewCamera(Error: string);
-    procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure ListBoxPlayAnimation(Sender: TObject);
 
   private
@@ -54,6 +63,16 @@ type
     procedure InitEditorComponents;
     procedure SetFailedObject(NodeName: string);
     procedure StartErrorDetectionNav(Sender: TObject);
+    procedure InitializeGLWin;
+    procedure ForwardEditorComponentsToMethods;
+    procedure AnimateCameraToPosition(Position, Direction, Up: TVector3);
+    function CalculateCameraPosition(Target, Direction: TVector3;
+      Distance: Single): TVector3;
+    function CalculateCenterOfBoundingBox(Bbox: TBox3D): TVector3;
+    function CalculateDistanceToModelCenter(Bbox: TBox3D): Single;
+    function CalculateLookDirection(Target,
+      CurrentPosition: TVector3): TVector3;
+    procedure ToggleViewportVisibility(IsVisible: Boolean);
 
   public
     { Public declarations }
@@ -61,6 +80,12 @@ type
     procedure FullscreenFailDetectionWindow(Sender: TObject);
 
   end;
+
+const
+  DefaultOrbitSpeed = 10; // Degrees per second
+  VerticalPositionOffset = 20;
+  AlmostWhiteColor: TVector3 = (Data: (0.9, 0.9, 0.9));
+  RedishColor: TVector3 = (Data: (0.9, 0.1, 0.1));
 
 var
   Form1: TForm1;
@@ -116,73 +141,66 @@ begin
     LookTarget := Viewport1.Items.BoundingBox.Center;
     LookDir := LookTarget - Viewport1.Camera.Translation;
     LookDir := RotatePointAroundAxis(Vector4(DesiredUp, AngleRotate), LookDir);
-
-    Viewport1.Camera.SetView(LookTarget - LookDir,
-      // new camera Translation (aka position)
-      LookDir, // new camera Direction (the length of LookDir given here is ignored, ok)
-      DesiredUp);
-
+    Viewport1.Camera.SetView(LookTarget - LookDir, LookDir, DesiredUp);
   end;
+end;
 
+procedure TCastleApp.UpdateMainCameraPosition(const ModelCenter: TVector3;
+  const DistanceToModel, AngleU: Single);
+var
+  CPos: TVector3;
+  LookAtDirection: TVector3;
+begin
+  CPos.X := ModelCenter.X + DistanceToModel * Cos(AngleU);
+  CPos.Z := ModelCenter.Z + DistanceToModel * Sin(AngleU);
+  CPos.Y := ModelCenter.Y + VerticalCameraOffset; // Vertical position
+  LookAtDirection := ModelCenter - CPos;
+  Viewport1.Camera.SetView(CPos, LookAtDirection, DesiredUp);
 end;
 
 procedure TCastleApp.Update(const SecondsPassed: Single;
   var HandleInput: boolean);
 var
-  CPos, ModelCenter, LookAtDirection: TVector3;
-  DistanceToModel, OrbitSpeed, AngleU: Single;
+  ModelCenter: TVector3;
+  DistanceToModel, AngleU: Single;
 begin
   inherited;
 
   if CamOrbitIsActive then
   begin
-    ModelCenter := Viewport1.Items.BoundingBox.Center; // Center of the model
-    // LabelFPS.Caption := 'Size: ' + Viewport1.Items.BoundingBox.AverageSize.ToString;
-    DistanceToModel := Viewport1.Items.BoundingBox.AverageSize * 1.75;
-    // Orbit radius
-    OrbitSpeed := 10; // Degrees per second
-
-    // Update total time passed
+    ModelCenter := Viewport1.Items.BoundingBox.Center;
+    DistanceToModel := Viewport1.Items.BoundingBox.AverageSize *
+      OrbitMultiplier;
     TotalTimePassed := TotalTimePassed + SecondsPassed;
-
-    // Convert orbit speed to radians and calculate angle
-    AngleU := (OrbitSpeed * TotalTimePassed) * (Pi / 180); // Convert to radians
-
-    // Calculate new camera position for circular orbit
-    CPos.X := ModelCenter.X + DistanceToModel * Cos(AngleU);
-    CPos.Z := ModelCenter.Z + DistanceToModel * Sin(AngleU);
-    CPos.Y := ModelCenter.Y + 20; // Vertical position
-
-    // Adjust camera look at direction
-    LookAtDirection := ModelCenter - CPos;
-
-    // Set the new camera view
-    Viewport1.Camera.SetView(CPos, LookAtDirection, DesiredUp);
+    AngleU := (DefaultOrbitSpeed * TotalTimePassed) * RadiansPerDegree;
+    UpdateMainCameraPosition(ModelCenter, DistanceToModel, AngleU);
   end;
+end;
 
+procedure TForm1.InitializeGLWin;
+var
+  CastleControls: TArray<TCastleControl>;
+begin
+  CastleControls := FindCastleControls(Self);
+  IsCastleControlOnForm := Length(CastleControls) > 0;
+
+  if IsCastleControlOnForm then
+    GLWin := CastleControls[0]
+  else
+    GLWin := TCastleControl.Create(Self);
+
+  GLWin.Parent := Self;
+  GLWin.Align := alClient;
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);
-var
-  c: TArray<TCastleControl>;
 begin
-  IsCastleControlOnForm := True;
-  c := FindCastleControls(Self);
-  if Length(c) = 0 then
-  begin
-    IsCastleControlOnForm := false;
-    GLWin := TCastleControl.Create(Self)
-  end
-  else
+  InitializeGLWin;
 
-    GLWin := c[0];
-  GLWin.Parent := Form1;
-  GLWin.Align := alClient;
   GLView := TCastleApp.Create(GLWin);
   GLWin.Container.View := GLView;
 
   InitVars;
-
 end;
 
 procedure TForm1.InitEditorComponents;
@@ -202,18 +220,12 @@ begin
     as TCastleCamera;
   MakeBiggerButton := CastleControl.Container.DesignedComponent('MakeBigger')
     as TCastleButton;
-  MakeBiggerButton.OnClick := FullscreenFailDetectionWindow;
-
   ExitButton := CastleControl.Container.DesignedComponent('ExitButton')
     as TCastleButton;
-
   LabelFPS := CastleControl.Container.DesignedComponent('LabelFPS')
     as TCastleLabel;
   NavigateButton := CastleControl.Container.DesignedComponent('NavigateButton')
     as TCastleButton;
-  NavigateButton.OnClick := StartErrorDetectionNav;
-  Viewport2.Navigation.Exists := false;
-  ExitButton.OnClick := ExitFailDetectionWindow;
 
 end;
 
@@ -230,29 +242,37 @@ begin
   Viewport2.FullSize := True;
 end;
 
+procedure TForm1.ForwardEditorComponentsToMethods;
+begin
+  MakeBiggerButton.OnClick := FullscreenFailDetectionWindow;
+  NavigateButton.OnClick := StartErrorDetectionNav;
+  ExitButton.OnClick := ExitFailDetectionWindow;
+end;
+
 procedure TForm1.InitVars;
 var
   I: Integer;
 begin
+  InitEditorComponents;
+  ForwardEditorComponentsToMethods;
+
   FailureDection.Enabled := false;
+  Viewport2.Navigation.Exists := false;
   MainNavIsActive := True;
   CamOrbitIsActive := True;
-  InitEditorComponents;
 
-  // // puts all animations in a list
-  // for I := 0 to ModelScene.AnimationsList.Count - 1 do
-  // ListBox1.AddItem(ModelScene.AnimationsList[I], nil);
+  // puts all animations in a list
+  for I := 0 to ModelScene.AnimationsList.Count - 1 do
+    ListBox1.AddItem(ModelScene.AnimationsList[I], nil);
 
-  // failure should be false on default.
   failureDetected := false;
 
   // sets extra ErrorCamera in the world.
   Viewport2.Items := Viewport1.Items;
   Viewport2.Camera := ErrorCamera;
-  Viewport2.Exists := True;
+  Viewport2.Exists := false;
 
   // search for statuslight object
-
   try
     StatusLightAppNode := ModelScene.Node('M_StatusLight') as TAppearanceNode;
     Mat := StatusLightAppNode.Material as TPhysicalMaterialNode;
@@ -279,17 +299,6 @@ begin
     Viewport2.Navigation.Exists := false;
     CamOrbitIsActive := True;
   end;
-
-end;
-
-procedure TForm1.FormKeyDown(Sender: TObject; var Key: Word;
-  Shift: TShiftState);
-begin
-
-  if Key = VK_ESCAPE then
-  begin
-    ModelScene.Exists := not ModelScene.Exists;
-  end;
 end;
 
 procedure TForm1.FailureDetectionTimer(Sender: TObject);
@@ -301,18 +310,17 @@ begin
     if LightIsRed then
     begin
       if Mat <> nil then
-        Mat.BaseColor := Vector3(0.9, 0.9, 0.9); // almost white
+        Mat.BaseColor := AlmostWhiteColor;
       LightIsRed := false;
       for I := 0 to Length(ShapeNodeColors) - 1 do
         // set error material node color to original color
         ShapeNodeColors[I].PhysicalMatNode.BaseColor := ShapeNodeColors[I]
           .OriginalColor;
-
     end
     else
     begin
       if Mat <> nil then
-        Mat.BaseColor := Vector3(0.9, 0.1, 0.1); // red-ish
+        Mat.BaseColor := RedishColor;
       LightIsRed := True;
       for I := 0 to Length(ShapeNodeColors) - 1 do
         // set error material node color to original color
@@ -330,7 +338,6 @@ var
   ShapeNode: TShapeNode;
   ErrorAppearanceNode: TAppearanceNode;
   ErrorMaterialNode: TPhysicalMaterialNode;
-
 begin
   try
     ErrorRootNode := ModelScene.RootNode.FindNode(NodeName) as TTransformNode;
@@ -385,9 +392,7 @@ begin
       if ShapeList[I].GeometryGrandParentNode.X3DName = ErrorgroupNode.X3DName
       then
       begin
-        // ShapeList[I].BoundingBox.Transform(modelScene.WorldTransform); //value bbox
         SumBox := SumBox + ShapeList[I].BoundingBox;
-
       end;
     end;
     Result := SumBox.Transform(ModelScene.WorldTransform);
@@ -400,38 +405,61 @@ end;
 
 procedure TForm1.NewCamera(Error: string);
 var
-  APos: TVector3;
+  APos, LookAtFailedTarget, LookDirection: TVector3;
   BboxSize: TBox3D;
-  FLookAtTarger, FLookDir: TVector3;
-  FDistanceToModel: Single;
-
+  DistanceToModelCenter: Single;
 begin
-  Viewport2.FullSize := false;
+  ToggleViewportVisibility(Assigned(ErrorRootNode));
 
   if Assigned(ErrorRootNode) then
   begin
-    if not Viewport2.Exists then
-      Viewport2.Exists := True;
-
     BboxSize := CalculateSumBbox();
-    FLookAtTarger := BboxSize.Center; // Target is the center of the Bbox
-    FLookDir := FLookAtTarger - Viewport2.Camera.Translation;
-    FDistanceToModel := BboxSize.AverageSize * 2;
-    APos := FLookAtTarger - (Normalized(FLookDir) * FDistanceToModel);
-    Viewport2.Camera.AnimateTo(APos, FLookDir, DesiredUp, 1.5);
+    LookAtFailedTarget := CalculateCenterOfBoundingBox(BboxSize);
+    LookDirection := CalculateLookDirection(LookAtFailedTarget, Viewport2.Camera.Translation);
+    DistanceToModelCenter := CalculateDistanceToModelCenter(BboxSize);
 
-  end
-  else
-  begin
-    if Viewport2.Exists then
-      Viewport2.Exists := false;
+    APos := CalculateCameraPosition(LookAtFailedTarget, LookDirection, DistanceToModelCenter);
+    AnimateCameraToPosition(APos, LookDirection, DesiredUp);
+
+
   end;
+end;
+
+procedure TForm1.ToggleViewportVisibility(IsVisible: Boolean);
+begin
+  Viewport2.Exists := IsVisible;
+  Viewport2.FullSize := False;
+end;
+
+function TForm1.CalculateCenterOfBoundingBox(Bbox: TBox3D): TVector3;
+begin
+  Result := Bbox.Center;
+end;
+
+function TForm1.CalculateLookDirection(Target, CurrentPosition: TVector3): TVector3;
+begin
+  Result := Target - CurrentPosition;
+end;
+
+function TForm1.CalculateDistanceToModelCenter(Bbox: TBox3D): Single;
+begin
+  Result := Bbox.AverageSize * 2;
+end;
+
+function TForm1.CalculateCameraPosition(Target, Direction: TVector3; Distance: Single): TVector3;
+begin
+  Result := Target - (Normalized(Direction) * Distance);
+end;
+
+procedure TForm1.AnimateCameraToPosition(Position, Direction, Up: TVector3);
+begin
+  Viewport2.Camera.AnimateTo(Position, Direction, Up, 1.5);
 end;
 
 procedure TForm1.SetErrorButtonClick(Sender: TObject);
 var
-  Error : string;
-   I: Integer;
+  Error: string;
+  I: Integer;
 begin
   Error := '2_Gripper Frame, Precise, PF400';
   // As TransformNode - Look at X3D file.    added :1 cuz thats the transform above it

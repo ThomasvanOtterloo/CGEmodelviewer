@@ -11,7 +11,6 @@ object Form1: TForm1
   Font.Name = 'Segoe UI'
   Font.Style = []
   OnCreate = FormCreate
-  OnKeyDown = FormKeyDown
   DesignSize = (
     967
     538)
