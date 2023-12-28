@@ -1,5 +1,4 @@
 program VCLTest;
-
   {$warn COMPARING_SIGNED_UNSIGNED off}
   {$warn COMBINING_SIGNED_UNSIGNED off}
   {$warn COMBINING_SIGNED_UNSIGNED64 off}
@@ -13,10 +12,10 @@ program VCLTest;
   
 uses
   Vcl.Forms,
-  Unit1 in 'Unit1.pas' {Form1};
+  MainForm in 'MainForm.pas' {Form1},
+  ErrorManager in 'ErrorManager.pas';
 
 {$R *.res}
-
 begin
   Application.Initialize;
   Application.MainFormOnTaskbar := True;

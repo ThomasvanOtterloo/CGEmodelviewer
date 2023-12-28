@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{1B270F9B-8345-43C5-B1EF-0040177D6D0C}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="VCLTest.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="..\..\Embarcadero\Studio\Projects\Project3.dproj">
+            <Dependencies>VCLTest.dproj</Dependencies>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="VCLTest">
+        <MSBuild Projects="VCLTest.dproj"/>
+    </Target>
+    <Target Name="VCLTest:Clean">
+        <MSBuild Projects="VCLTest.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="VCLTest:Make">
+        <MSBuild Projects="VCLTest.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Project3" DependsOnTargets="VCLTest">
+        <MSBuild Projects="..\..\Embarcadero\Studio\Projects\Project3.dproj"/>
+    </Target>
+    <Target Name="Project3:Clean" DependsOnTargets="VCLTest:Clean">
+        <MSBuild Projects="..\..\Embarcadero\Studio\Projects\Project3.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Project3:Make" DependsOnTargets="VCLTest:Make">
+        <MSBuild Projects="..\..\Embarcadero\Studio\Projects\Project3.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="VCLTest;Project3"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="VCLTest:Clean;Project3:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="VCLTest:Make;Project3:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
