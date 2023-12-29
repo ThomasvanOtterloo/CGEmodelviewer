@@ -13,7 +13,9 @@ program VCLTest;
 uses
   Vcl.Forms,
   MainForm in 'MainForm.pas' {Form1},
-  ErrorManager in 'ErrorManager.pas';
+  ErrorManager in 'ErrorManager.pas',
+  ModelProcessing in 'ModelProcessing.pas',
+  ShapeNodeColor in 'ShapeNodeColor.pas';
 
 {$R *.res}
 begin

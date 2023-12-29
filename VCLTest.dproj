@@ -95,6 +95,8 @@
             <Form>Form1</Form>
         </DCCReference>
         <DCCReference Include="ErrorManager.pas"/>
+        <DCCReference Include="ModelProcessing.pas"/>
+        <DCCReference Include="ShapeNodeColor.pas"/>
         <None Include="VCLTest.dpr"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>

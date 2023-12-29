@@ -12,14 +12,9 @@ uses
   CastleComponentSerialize, CastleKeysMouse, CastleLog, CastleControls,
   CastleVectors, CastleGLUtils, CastleUtils, CastleTriangles,
   CastleRectangles, CastleColors, CastleScene, CastleViewport,
+  Vcl.CastleControl,
 
-  Math, Vcl.CastleControl, ErrorManager;
-
-type
-  TShapeNodeColor = record
-    PhysicalMatNode: TPhysicalMaterialNode;
-    OriginalColor: TVector3;
-  end;
+  Math, ErrorManager,ModelProcessing, ShapeNodeColor;
 
 type
   TCastleApp = class(TCastleView)
@@ -29,7 +24,6 @@ type
     OrbitMultiplier = 1.75;
     VerticalCameraOffset = 20;
     RadiansPerDegree = Pi / 180;
-
 
   public
     procedure Update(const SecondsPassed: Single;
@@ -58,22 +52,23 @@ type
     GLWin: TCastleControl;
     GLView: TCastleApp;
 
+      ErrorManager: TErrorManager;
+      ModelProcessing: TModelProcessing;
 
-
-  public
-    { Public declarations }
-    ErrorManager: TErrorManager;
     procedure ExitFailDetectionViewport(Sender: TObject);
     procedure FullscreenFailDetectionWindow(Sender: TObject);
-       function FindCastleControls(o: TObject): TArray<TCastleControl>;
+    function FindCastleControls(o: TObject): TArray<TCastleControl>;
     procedure InitVars;
     procedure InitEditorComponents;
-    procedure SetFailedObject(NodeName: string);
+    procedure FindFailedNode(NodeName: string);
     procedure StartErrorDetectionNav(Sender: TObject);
     procedure InitializeGLWin;
     procedure ForwardEditorComponentsToMethods;
-    function CalculateSumBbox: TBox3D;
     procedure SetFailedDetection;
+
+  public
+    { Public declarations }
+
 
   end;
 
@@ -115,7 +110,7 @@ var
 
   TotalTimePassed: Single = 0;
 
-  PShapeNodeColors: array of TShapeNodeColor;  //Pointer
+  PShapeNodeColors: array of TShapeNodeColor; // Pointer
 
 implementation
 
@@ -223,7 +218,6 @@ begin
   NavigateButton := CastleControl.Container.DesignedComponent('NavigateButton')
     as TCastleButton;
 
-
 end;
 
 procedure TForm1.ExitFailDetectionViewport(Sender: TObject);
@@ -254,6 +248,8 @@ begin
   ForwardEditorComponentsToMethods;
 
   ErrorManager := TErrorManager.Create;
+  ModelProcessing := TModelProcessing.Create(ModelScene);
+
 
   FailureDection.Enabled := false;
   Viewport2.Navigation.Exists := false;
@@ -327,76 +323,16 @@ begin
   end
 end;
 
-procedure TForm1.SetFailedObject(NodeName: string);
+procedure TForm1.FindFailedNode(NodeName: string);
 var
   I: Integer;
-  newNodeColor: TShapeNodeColor;
-  ErrorShapeNode: TShapeNode;
-  ErrorAppearanceNode: TAppearanceNode;
-  ErrorMaterialNode: TPhysicalMaterialNode;
 begin
-  try
-    ErrorRootNode := ModelScene.RootNode.FindNode(NodeName) as TTransformNode;
-
-    // Root
-    while (ErrorRootNode <> nil) and (ErrorRootNode.FdChildren.Count > 0) and
-      (ErrorRootNode.FdChildren[0] is TTransformNode) do
+var NewArray := ModelProcessing.SetFailedObject(NodeName);
+     for I := Low(NewArray) to High(NewArray) do
     begin
-      ErrorRootNode := ErrorRootNode.FdChildren[0] as TTransformNode;
-    end; // recursive pattern
-  except
-    ErrorManager.HandleError('Given part name is not found in X3D file.')
-  end;
-
-  try
-    ErrorgroupNode := ErrorRootNode.FdChildren[0] as TGroupNode; // first child
-    for I := 0 to ErrorgroupNode.FdChildren.Count - 1 do
-    begin
-      ErrorShapeNode := ErrorgroupNode.FdChildren[I] as TShapeNode;
-      ErrorAppearanceNode := ErrorShapeNode.Appearance as TAppearanceNode;
-      ErrorMaterialNode := ErrorAppearanceNode.Material as
-        TPhysicalMaterialNode;
-      newNodeColor.PhysicalMatNode :=
-        ErrorMaterialNode as TPhysicalMaterialNode;
-      newNodeColor.OriginalColor := ErrorMaterialNode.BaseColor;
-
-      SetLength(PShapeNodeColors, I + 1);
-      PShapeNodeColors[I] := newNodeColor;
+        SetLength(PShapeNodeColors, I+1);
+        PShapeNodeColors[I] := NewArray[I];
     end;
-  except
-    ErrorManager.HandleError
-      ('Something went wrong creating the array of shapes. (children of TransformNode)');
-    if ErrorRootNode.FdChildren.Count > 0 then
-
-      ErrorManager.HandleError
-        ('TransformNode Found, But something went wrong. Amount of TransformNodes in root:'
-        + ErrorRootNode.FdChildren.Count.ToString);
-  end;
-end;
-
-function TForm1.CalculateSumBbox(): TBox3D;
-var
-  I: Integer;
-  ShapeList: TShapeList;
-  SumBox: TBox3D;
-
-begin
-  try
-    ShapeList := ModelScene.Shapes.TraverseList(True, True, True);
-    for I := 0 to ModelScene.Shapes.TraverseList(True, True, True).Count - 1 do
-    begin
-      if ShapeList[I].GeometryGrandParentNode.X3DName = ErrorgroupNode.X3DName
-      then
-      begin
-        SumBox := SumBox + ShapeList[I].BoundingBox;
-      end;
-    end;
-    Result := SumBox.Transform(ModelScene.WorldTransform);
-  except
-    on E: Exception do
-      ErrorManager.HandleError('Error: ' + E.Message);
-
-  end;
 
 end;
 
@@ -408,12 +344,11 @@ var
   FDistanceToModel: Single;
 
 begin
-
-  if Assigned(ErrorRootNode) then
+  if FailureDetected then
   begin
     if not Viewport2.Exists then
-      Viewport2.Exists := True;
-    BboxSize := CalculateSumBbox();
+    Viewport2.Exists := True;
+    BboxSize := ModelProcessing.CalculateSumBbox(ModelScene.Shapes.TraverseList(True, True, True));
     FacingDirection := BboxSize.Center - Viewport2.Camera.Translation;
     FDistanceToModel := BboxSize.AverageSize * 2.5;
     APos := BboxSize.Center - (Normalized(FacingDirection) * FDistanceToModel);
@@ -448,7 +383,7 @@ begin
     else
     begin // start error display
       SetFailedDetection;
-      SetFailedObject(Error);
+      FindFailedNode(Error);
       NewCamera(Error);
     end;
   except
