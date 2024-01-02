@@ -91,12 +91,14 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="MainForm.pas">
+        <DCCReference Include="Code\MainForm.pas">
             <Form>Form1</Form>
         </DCCReference>
-        <DCCReference Include="ErrorManager.pas"/>
-        <DCCReference Include="ModelProcessing.pas"/>
-        <DCCReference Include="ShapeNodeColor.pas"/>
+        <DCCReference Include="Code\ErrorManager.pas"/>
+        <DCCReference Include="Code\ModelProcessing.pas"/>
+        <DCCReference Include="Code\ShapeNodeColor.pas"/>
+        <DCCReference Include="Code\T3DViewManager.pas"/>
+        <DCCReference Include="Code\CastleControlManager.pas"/>
         <None Include="VCLTest.dpr"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
