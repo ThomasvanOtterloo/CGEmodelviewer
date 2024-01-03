@@ -35,8 +35,30 @@ type
   private
     { Private declarations }
     GLView: TCastleApp;
-    GLWin: TCastleControl;
+    MainCamera: TCastleCamera;
+    ModelScene: TCastleScene;
+    DefaultViewport: TCastleViewport;
+    ErrorScopeViewport: TCastleViewport;
+    MakeBiggerButton: TCastleButton;
+    ExitButton: TCastleButton;
+    NavigateButton: TCastleButton;
+    Items: TCastleRootTransform;
+    ErrorCamera: TCastleCamera;
 
+    LabelFPS: TCastleLabel;
+
+    OrbitRadius, OrbitSpeed, Angle: Double;
+
+    ErrorRootNode: TTransformNode; // TTransformNode RootNode;
+    ErrorgroupNode: TGroupNode; // FIrst child
+
+    FailureDetected: boolean;
+    MatStatusLight: TPhysicalMaterialNode;
+    StatusLightAppNode: TAppearanceNode;
+
+    LightIsRed: boolean;
+
+    PShapeNodeColors: array of TShapeNodeColor; // Pointer
 
     ErrorManager: TErrorManager;
     ModelProcessing: TModelProcessing;
@@ -64,31 +86,6 @@ const
 var
   Form1: TForm1;
 
-  MainCamera: TCastleCamera;
-  ModelScene: TCastleScene;
-  Viewport1: TCastleViewport;
-  Viewport2: TCastleViewport;
-  MakeBiggerButton: TCastleButton;
-  ExitButton: TCastleButton;
-  NavigateButton: TCastleButton;
-  Items: TCastleRootTransform;
-  ErrorCamera: TCastleCamera;
-
-  LabelFPS: TCastleLabel;
-
-  OrbitRadius, OrbitSpeed, Angle: Double;
-
-  ErrorRootNode: TTransformNode; // TTransformNode RootNode;
-  ErrorgroupNode: TGroupNode; // FIrst child
-
-  FailureDetected: boolean;
-  MatStatusLight: TPhysicalMaterialNode;
-  StatusLightAppNode: TAppearanceNode;
-  Hdmi: TCastleTransform;
-  LightIsRed: boolean;
-
-  PShapeNodeColors: array of TShapeNodeColor; // Pointer
-
 implementation
 
 {$R *.dfm}
@@ -97,15 +94,12 @@ uses System.Generics.Collections;
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  var a := CastleControlManager.InitializeGLWin(self);
-  GLView := TCastleApp.Create(self,a);
+  var
+  a := CastleControlManager.InitializeGLWin(self);
+  GLView := TCastleApp.Create(self, a);
   CastleControlManager.SetGLWinView(GLView);
   InitVars;
 end;
-
-
-
-
 
 procedure TForm1.InitEditorComponents;
 begin
@@ -116,10 +110,10 @@ begin
   MainCamera := CastleControl.Container.DesignedComponent('MainCamera')
     as TCastleCamera;
 
-  Viewport1 := CastleControl.Container.DesignedComponent('Viewport1')
+  DefaultViewport := CastleControl.Container.DesignedComponent('Viewport1')
     as TCastleViewport;
 
-  Viewport2 := CastleControl.Container.DesignedComponent('Viewport2')
+  ErrorScopeViewport := CastleControl.Container.DesignedComponent('Viewport2')
     as TCastleViewport;
   ErrorCamera := CastleControl.Container.DesignedComponent('ErrorCamera')
     as TCastleCamera;
@@ -136,15 +130,15 @@ end;
 
 procedure TForm1.ExitFailDetectionViewport(Sender: TObject);
 begin
-  Viewport2.Exists := false;
+  ErrorScopeViewport.Exists := false;
   GLView.SetBoolMainNav(true);
-  Viewport2.Navigation.Exists := false;
+  ErrorScopeViewport.Navigation.Exists := false;
   GLView.SetBoolCamOrbitIsActive(true);
 end;
 
 procedure TForm1.FullscreenFailDetectionWindow(Sender: TObject);
 begin
-  Viewport2.FullSize := true;
+  ErrorScopeViewport.FullSize := true;
 end;
 
 procedure TForm1.ForwardEditorComponentsToMethods;
@@ -165,8 +159,7 @@ begin
   ModelProcessing := TModelProcessing.Create(ModelScene);
 
   FailureDection.Enabled := false;
-  Viewport2.Navigation.Exists := false;
-
+  ErrorScopeViewport.Navigation.Exists := false;
 
   GLView.SetBoolMainNav(true);
   GLView.SetBoolCamOrbitIsActive(true);
@@ -178,9 +171,9 @@ begin
   FailureDetected := false;
 
   // sets extra ErrorCamera in the world.
-  Viewport2.Items := Viewport1.Items;
-  Viewport2.Camera := ErrorCamera;
-  Viewport2.Exists := false;
+  ErrorScopeViewport.Items := DefaultViewport.Items;
+  ErrorScopeViewport.Camera := ErrorCamera;
+  ErrorScopeViewport.Exists := false;
 
   // search for statuslight object
   try
@@ -200,13 +193,13 @@ begin
   if GLView.GetBoolMainNav then
   begin
     GLView.SetBoolMainNav(false);
-    Viewport2.Navigation.Exists := true;
+    ErrorScopeViewport.Navigation.Exists := true;
     GLView.SetBoolCamOrbitIsActive(true);
   end
   else
   begin
     GLView.SetBoolMainNav(true);
-    Viewport2.Navigation.Exists := false;
+    ErrorScopeViewport.Navigation.Exists := false;
     GLView.SetBoolCamOrbitIsActive(true);
   end;
 end;
@@ -253,35 +246,21 @@ begin
 end;
 
 procedure TForm1.NewCamera;
-var
-  APos: TVector3;
-  BboxSize: TBox3D;
-  FacingDirection: TVector3;
-  FDistanceToModel: Single;
-
-const
-  DesiredUp: TVector3 = (Data: (0, 1, 0));
-
 begin
   if FailureDetected then
   begin
-    if not Viewport2.Exists then
-      Viewport2.Exists := true;
-
-//      BboxSize := ModelProcessing.CalculateSumBbox
-//    (ModelScene.Shapes.TraverseList(true, true, true));
-      GLView.CalculateNewCameraPos(ModelProcessing, ModelScene);
-
-
+    if not ErrorScopeViewport.Exists then
+      ErrorScopeViewport.Exists := true;
+    GLView.CalculateNewCameraPos(ModelProcessing, ModelScene);
   end
   else
   begin
-    if Viewport2.Exists then
-      Viewport2.Exists := false;
+    if ErrorScopeViewport.Exists then
+      ErrorScopeViewport.Exists := false;
   end;
 end;
 
-procedure TForm1.SetErrorButtonClick(Sender: TObject);   //+
+procedure TForm1.SetErrorButtonClick(Sender: TObject); // +
 var
   Error: string;
   I: Integer;
@@ -307,33 +286,31 @@ begin
       NewCamera;
     end;
   except
-     on E: Exception do
-      ErrorManager.HandleError('Error matching X3DNames CalculatingSumBox: ' + E.Message);
+    on E: Exception do
+      ErrorManager.HandleError('Error matching X3DNames CalculatingSumBox: ' +
+        E.Message);
   end;
 end;
 
-
-
-
-procedure TForm1.SetFailedDetection(); //-
+procedure TForm1.SetFailedDetection(); // -
 begin
   if FailureDetected then
   begin // back to default
     FailureDetected := false;
     FailureDection.Enabled := false;
-    Viewport2.Exists := false;
+    ErrorScopeViewport.Exists := false;
   end
   else
   begin // start error display
     FailureDetected := true; // This enables the animation in TTimer.
     FailureDection.Enabled := true;
-    Viewport2.FullSize := false;
+    ErrorScopeViewport.FullSize := false;
   end;
 end;
 
 
 
-//animations
+// animations
 
 procedure TForm1.StartStopAnimation(Sender: TObject);
 begin

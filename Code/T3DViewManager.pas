@@ -24,8 +24,8 @@ type
     TotalTimePassed: Single;
     CamOrbitIsActive: boolean;
     CastleControl: TCastleControl;
-    Viewport1: TCastleViewport;
-    Viewport2: TCastleViewport;
+    DefaultViewport: TCastleViewport;
+    ErrorScopeViewport: TCastleViewport;
     MainNavIsActive: boolean;
     ModelProcessing: TModelProcessing;
     ModelScene: TCastleScene;
@@ -63,9 +63,9 @@ begin
   CamOrbitIsActive := true;
   MainNavIsActive := true;
 
-  Viewport1 := CastleControl.Container.DesignedComponent('Viewport1')
+  DefaultViewport := CastleControl.Container.DesignedComponent('Viewport1')
     as TCastleViewport;
-  Viewport2 := CastleControl.Container.DesignedComponent('Viewport2')
+  ErrorScopeViewport := CastleControl.Container.DesignedComponent('Viewport2')
     as TCastleViewport;
 
 end;
@@ -90,9 +90,9 @@ begin
 
   if CamOrbitIsActive then // private boolean in TForm. smart way to access it?
   begin
-    ModelCenter := Viewport1.Items.BoundingBox.Center;
+    ModelCenter := DefaultViewport.Items.BoundingBox.Center;
     // private boolean in TForm
-    DistanceToModel := Viewport1.Items.BoundingBox.AverageSize *
+    DistanceToModel := DefaultViewport.Items.BoundingBox.AverageSize *
       OrbitMultiplier;
     TotalTimePassed := TotalTimePassed + SecondsPassed;
     AngleU := (DefaultOrbitSpeed * TotalTimePassed) * RadiansPerDegree;
@@ -110,7 +110,7 @@ begin
   CPos.Z := ModelCenter.Z + DistanceToModel * Sin(AngleU);
   CPos.Y := ModelCenter.Y + VerticalCameraOffset; // Vertical position
   LookAtDirection := ModelCenter - CPos;
-  Viewport1.Camera.SetView(CPos, LookAtDirection, DesiredUp);
+  DefaultViewport.Camera.SetView(CPos, LookAtDirection, DesiredUp);
 end;
 
 function TCastleApp.GetBoolMainNav: boolean;
@@ -130,10 +130,10 @@ begin
   begin
     CamOrbitIsActive := false;
     AngleRotate := -0.01 * (Event.Position.X - Event.OldPosition.X);
-    LookTarget := Viewport1.Items.BoundingBox.Center;
-    LookDir := LookTarget - Viewport1.Camera.Translation;
+    LookTarget := DefaultViewport.Items.BoundingBox.Center;
+    LookDir := LookTarget - DefaultViewport.Camera.Translation;
     LookDir := RotatePointAroundAxis(Vector4(DesiredUp, AngleRotate), LookDir);
-    Viewport1.Camera.SetView(LookTarget - LookDir, LookDir, DesiredUp);
+    DefaultViewport.Camera.SetView(LookTarget - LookDir, LookDir, DesiredUp);
   end;
 end;
 
@@ -150,10 +150,10 @@ const
 begin
   BboxSize := ModelProcessing.CalculateSumBbox
     (ModelScene.Shapes.TraverseList(true, true, true));
-  FacingDirection := BboxSize.Center - Viewport2.Camera.Translation;
+  FacingDirection := BboxSize.Center - ErrorScopeViewport.Camera.Translation;
   FDistanceToModel := BboxSize.AverageSize * 2.5;
   APos := BboxSize.Center - (Normalized(FacingDirection) * FDistanceToModel);
-  Viewport2.Camera.AnimateTo(APos, FacingDirection, DesiredUp, 1.5);
+  ErrorScopeViewport.Camera.AnimateTo(APos, FacingDirection, DesiredUp, 1.5);
 end;
 
 end.
