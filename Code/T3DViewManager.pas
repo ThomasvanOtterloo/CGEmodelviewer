@@ -12,7 +12,7 @@ uses
   CastleComponentSerialize, CastleKeysMouse, CastleLog, CastleControls,
   CastleVectors, CastleGLUtils, CastleUtils, CastleTriangles,
   CastleRectangles, CastleColors, CastleScene, CastleViewport,
-  Vcl.CastleControl, CastleControlManager;
+  Vcl.CastleControl;
 
 type
   TCastleApp = class(TCastleView)
@@ -24,7 +24,6 @@ type
     TotalTimePassed: Single;
     CamOrbitIsActive: boolean;
     CastleControl: TCastleControl;
-
     Viewport1: TCastleViewport;
     MainNavIsActive: boolean;
 
@@ -37,8 +36,8 @@ type
 
   public
     // getters / setters
-    procedure SetBoolCamOrbitIsActive(bool: boolean);
-    procedure SetBoolMainNav(bool: boolean);
+    procedure SetBoolCamOrbitIsActive(boolInput: boolean);
+    procedure SetBoolMainNav(boolInput: boolean);
     function GetBoolMainNav: boolean;
 
     // methods
@@ -47,30 +46,34 @@ type
     function Motion(const Event: TInputMotion): boolean; override;
     procedure UpdateMainCameraPosition(const ModelCenter: TVector3;
       const DistanceToModel, AngleU: Single);
-    constructor Create(AOwner: TComponent);
+   constructor Create(AOwner: TForm; CastleControl: TCastleControl);
 
   end;
 
 implementation
 
-constructor TCastleApp.Create(AOwner: TComponent);
+
+constructor TCastleApp.Create(AOwner: TForm; CastleControl: TCastleControl);
 begin
+inherited Create(AOwner);
   TotalTimePassed := 0;
   CamOrbitIsActive := true;
-  CastleControl := CastleControlManager.GetCastleControl;
+  MainNavIsActive := true;
 
   Viewport1 := CastleControl.Container.DesignedComponent('Viewport1')
     as TCastleViewport;
 end;
 
-procedure TCastleApp.SetBoolCamOrbitIsActive(bool: boolean);
+
+
+procedure TCastleApp.SetBoolCamOrbitIsActive(boolInput: boolean);
 begin
-  CamOrbitIsActive := bool;
+  CamOrbitIsActive := boolInput;
 end;
 
-procedure TCastleApp.SetBoolMainNav(bool: boolean);
+procedure TCastleApp.SetBoolMainNav(boolInput: boolean);
 begin
-  MainNavIsActive := bool;
+  MainNavIsActive := boolInput;
 end;
 
 procedure TCastleApp.Update(const SecondsPassed: Single;

@@ -14,7 +14,8 @@ uses
   CastleRectangles, CastleColors, CastleScene, CastleViewport,
   Vcl.CastleControl,
 
-  Math, ErrorManager, ModelProcessing, ShapeNodeColor, T3DViewManager,CastleControlManager;
+  Math, ErrorManager, ModelProcessing, ShapeNodeColor, T3DViewManager,
+  CastleControlManager;
 
 type
   TForm1 = class(TForm)
@@ -33,20 +34,19 @@ type
 
   private
     { Private declarations }
-    GLWin: TCastleControl;
     GLView: TCastleApp;
+    GLWin: TCastleControl;
+
 
     ErrorManager: TErrorManager;
     ModelProcessing: TModelProcessing;
 
     procedure ExitFailDetectionViewport(Sender: TObject);
     procedure FullscreenFailDetectionWindow(Sender: TObject);
-    function FindCastleControls(o: TObject): TArray<TCastleControl>;
     procedure InitVars;
     procedure InitEditorComponents;
     procedure FindFailedNode(NodeName: string);
     procedure StartErrorDetectionNav(Sender: TObject);
-    procedure InitializeGLWin;
     procedure ForwardEditorComponentsToMethods;
     procedure SetFailedDetection;
 
@@ -87,7 +87,6 @@ var
   Hdmi: TCastleTransform;
   LightIsRed: boolean;
 
-
   PShapeNodeColors: array of TShapeNodeColor; // Pointer
 
 implementation
@@ -96,16 +95,17 @@ implementation
 
 uses System.Generics.Collections;
 
-
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-    CastleControlManager.InitializeGLWin(self); // intis GLWIN = TCastleControl
-//
-//  GLView := TCastleApp.Create(GLWin);
-//  GLWin.Container.View := GLView;
-
+  var a := CastleControlManager.InitializeGLWin(self);
+  GLView := TCastleApp.Create(self,a);
+  CastleControlManager.SetGLWinView(GLView);
   InitVars;
 end;
+
+
+
+
 
 procedure TForm1.InitEditorComponents;
 begin
@@ -115,6 +115,9 @@ begin
     as TCastleScene;
   MainCamera := CastleControl.Container.DesignedComponent('MainCamera')
     as TCastleCamera;
+
+  Viewport1 := CastleControl.Container.DesignedComponent('Viewport1')
+    as TCastleViewport;
 
   Viewport2 := CastleControl.Container.DesignedComponent('Viewport2')
     as TCastleViewport;
@@ -141,7 +144,7 @@ end;
 
 procedure TForm1.FullscreenFailDetectionWindow(Sender: TObject);
 begin
-  Viewport2.FullSize := True;
+  Viewport2.FullSize := true;
 end;
 
 procedure TForm1.ForwardEditorComponentsToMethods;
@@ -158,12 +161,13 @@ begin
   InitEditorComponents;
   ForwardEditorComponentsToMethods;
 
-
   ErrorManager := TErrorManager.Create;
   ModelProcessing := TModelProcessing.Create(ModelScene);
 
   FailureDection.Enabled := false;
   Viewport2.Navigation.Exists := false;
+
+
   GLView.SetBoolMainNav(true);
   GLView.SetBoolCamOrbitIsActive(true);
 
@@ -196,7 +200,7 @@ begin
   if GLView.GetBoolMainNav then
   begin
     GLView.SetBoolMainNav(false);
-    Viewport2.Navigation.Exists := True;
+    Viewport2.Navigation.Exists := true;
     GLView.SetBoolCamOrbitIsActive(true);
   end
   else
@@ -226,7 +230,7 @@ begin
     begin
       if MatStatusLight <> nil then
         MatStatusLight.BaseColor := RedishColor;
-      LightIsRed := True;
+      LightIsRed := true;
       for I := 0 to Length(PShapeNodeColors) - 1 do
         PShapeNodeColors[I].PhysicalMatNode.BaseColor := Vector3(0.9, 0.1, 0.1);
 
@@ -248,23 +252,23 @@ begin
 
 end;
 
-procedure TForm1.NewCamera(Error: string);
+procedure TForm1.NewCamera(Error: string);   //todo; to new class. Camera class? or existing?
 var
   APos: TVector3;
   BboxSize: TBox3D;
-  LookAtFailedTarget, FacingDirection: TVector3;
+  FacingDirection: TVector3;
   FDistanceToModel: Single;
 
-  const
+const
   DesiredUp: TVector3 = (Data: (0, 1, 0));
 
 begin
   if FailureDetected then
   begin
     if not Viewport2.Exists then
-      Viewport2.Exists := True;
+      Viewport2.Exists := true;
     BboxSize := ModelProcessing.CalculateSumBbox
-      (ModelScene.Shapes.TraverseList(True, True, True));
+      (ModelScene.Shapes.TraverseList(true, true, true));
     FacingDirection := BboxSize.Center - Viewport2.Camera.Translation;
     FDistanceToModel := BboxSize.AverageSize * 2.5;
     APos := BboxSize.Center - (Normalized(FacingDirection) * FDistanceToModel);
@@ -277,7 +281,7 @@ begin
   end;
 end;
 
-procedure TForm1.SetErrorButtonClick(Sender: TObject);
+procedure TForm1.SetErrorButtonClick(Sender: TObject);   //+
 var
   Error: string;
   I: Integer;
@@ -308,7 +312,10 @@ begin
   end;
 end;
 
-procedure TForm1.SetFailedDetection();
+
+
+
+procedure TForm1.SetFailedDetection(); //-
 begin
   if FailureDetected then
   begin // back to default
@@ -318,11 +325,15 @@ begin
   end
   else
   begin // start error display
-    FailureDetected := True; // This enables the animation in TTimer.
-    FailureDection.Enabled := True;
+    FailureDetected := true; // This enables the animation in TTimer.
+    FailureDection.Enabled := true;
     Viewport2.FullSize := false;
   end;
 end;
+
+
+
+//animations
 
 procedure TForm1.StartStopAnimation(Sender: TObject);
 begin
@@ -341,22 +352,7 @@ begin
   begin
     ItemValue := ListBox.Items[ItemIndex];
     // Gets the value of the selected item
-    ModelScene.PlayAnimation(ItemValue, True);
-  end;
-end;
-
-function TForm1.FindCastleControls(o: TObject): TArray<TCastleControl>;
-var
-  I: Integer;
-begin
-  Result := TArray<TCastleControl>.Create();
-  for I := 0 to ComponentCount - 1 do
-  begin
-    if Components[I] is TCastleControl then
-    begin
-      SetLength(Result, Length(Result) + 1);
-      Result[Length(Result) - 1] := TCastleControl(Components[I]);
-    end;
+    ModelScene.PlayAnimation(ItemValue, true);
   end;
 end;
 

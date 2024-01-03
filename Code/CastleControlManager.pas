@@ -3,50 +3,39 @@ unit CastleControlManager;
 interface
 
 uses
-  T3DViewManager,Vcl.CastleControl, SysUtils, Vcl.Dialogs, System.Classes, vcl.Controls,VCL.Forms
-  ;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
+  System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
+  Vcl.StdCtrls, Vcl.ExtCtrls,
+
+  CastleShapes, CastleCameras, X3DNodes, X3DLoad, CastleTransform,
+  CastleBoxes, CastleSceneCore, X3DLoadInternalUtils, CastleUIControls,
+  CastleComponentSerialize, CastleKeysMouse, CastleLog, CastleControls,
+  CastleVectors, CastleGLUtils, CastleUtils, CastleTriangles,
+  CastleRectangles, CastleColors, CastleScene, CastleViewport,
+  Vcl.CastleControl,
+
+  Math, ErrorManager, ModelProcessing, ShapeNodeColor, T3DViewManager;
 
 function GetCastleControl: TCastleControl;
-function FindCastleControls(o: TObject): TArray<TCastleControl>;
-procedure InitializeGLWin(Form: TForm);
-
+function FindCastleControls(Form: TForm): TArray<TCastleControl>;
+function InitializeGLWin(Form: TForm): TCastleControl;
+procedure SetGLWinView(GLView: TCastleApp);
 
 implementation
+
 var
-  CastleControl: TCastleControl;
   IsCastleControlOnForm: boolean;
   GLWin: TCastleControl;
   GLView: TCastleApp;
 
-function GetCastleControl: TCastleControl;
+function GetCastleControl: TCastleControl; // third. Getting CastleControl
 begin
+  GLWin.Container.DesignUrl := 'castle-data:/test_3d.castle-user-interface';
 
-  CastleControl.Container.DesignUrl :=
-    'castle-data:/test_3d.castle-user-interface';
-
-result := CastleControl;
+  result := GLWin;
 end;
 
-
-
-function FindCastleControls(o: TObject): TArray<TCastleControl>;
-var
-  I: Integer;
-begin
-  Result := TArray<TCastleControl>.Create();
-  for I := 0 to ComponentCount - 1 do
-  begin
-    if Components[I] is TCastleControl then
-    begin
-      SetLength(Result, Length(Result) + 1);
-      Result[Length(Result) - 1] := TCastleControl(Components[I]);
-    end;
-  end;
-end;
-
-
-
-procedure InitializeGLWin(Form: TForm);
+function InitializeGLWin(Form: TForm): TCastleControl; // first
 var
   CastleControls: TArray<TCastleControl>;
 begin
@@ -61,11 +50,31 @@ begin
   GLWin.Parent := Form;
   GLWin.Align := alClient;
 
-
   //
+  result := GLWin;
 
-   GLView := TCastleApp.Create(GLWin);
-  GLWin.Container.View := GLView;
+end;
+
+
+procedure SetGLWinView(GLView: TCastleApp);
+begin
+    GLWin.Container.View := GLView;
+end;
+
+
+function FindCastleControls(Form: TForm): TArray<TCastleControl>; // second
+var
+  I: Integer;
+begin
+  result := TArray<TCastleControl>.Create();
+  for I := 0 to Form.ComponentCount - 1 do
+  begin
+    if Form.Components[I] is TCastleControl then
+    begin
+      SetLength(result, Length(result) + 1);
+      result[Length(result) - 1] := TCastleControl(Form.Components[I]);
+    end;
+  end;
 
 end;
 
