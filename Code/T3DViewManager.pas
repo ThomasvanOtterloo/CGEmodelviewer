@@ -5,7 +5,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
   System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
-  Vcl.StdCtrls, Vcl.ExtCtrls,
+  Vcl.StdCtrls, Vcl.ExtCtrls, ModelProcessing,
 
   CastleShapes, CastleCameras, X3DNodes, X3DLoad, CastleTransform,
   CastleBoxes, CastleSceneCore, X3DLoadInternalUtils, CastleUIControls,
@@ -25,7 +25,9 @@ type
     CamOrbitIsActive: boolean;
     CastleControl: TCastleControl;
     Viewport1: TCastleViewport;
+    Viewport2: TCastleViewport;
     MainNavIsActive: boolean;
+    ModelProcessing: TModelProcessing;
 
   const
     OrbitMultiplier = 1.75;
@@ -39,6 +41,7 @@ type
     procedure SetBoolCamOrbitIsActive(boolInput: boolean);
     procedure SetBoolMainNav(boolInput: boolean);
     function GetBoolMainNav: boolean;
+    procedure CalculateNewCameraPos(ModelScene: TCastleScene);
 
     // methods
     procedure Update(const SecondsPassed: Single;
@@ -46,25 +49,28 @@ type
     function Motion(const Event: TInputMotion): boolean; override;
     procedure UpdateMainCameraPosition(const ModelCenter: TVector3;
       const DistanceToModel, AngleU: Single);
-   constructor Create(AOwner: TForm; CastleControl: TCastleControl);
+    constructor Create(AOwner: TForm; CastleControl: TCastleControl);
 
   end;
 
 implementation
 
-
 constructor TCastleApp.Create(AOwner: TForm; CastleControl: TCastleControl);
 begin
-inherited Create(AOwner);
+  inherited Create(AOwner);
   TotalTimePassed := 0;
   CamOrbitIsActive := true;
   MainNavIsActive := true;
 
+
+
+
   Viewport1 := CastleControl.Container.DesignedComponent('Viewport1')
     as TCastleViewport;
+  Viewport2 := CastleControl.Container.DesignedComponent('Viewport2')
+    as TCastleViewport;
+
 end;
-
-
 
 procedure TCastleApp.SetBoolCamOrbitIsActive(boolInput: boolean);
 begin
@@ -131,6 +137,26 @@ begin
     LookDir := RotatePointAroundAxis(Vector4(DesiredUp, AngleRotate), LookDir);
     Viewport1.Camera.SetView(LookTarget - LookDir, LookDir, DesiredUp);
   end;
+end;
+
+procedure TCastleApp.CalculateNewCameraPos(ModelScene: TCastleScene);
+var
+  APos: TVector3;
+  BboxSize: TBox3D;
+  FacingDirection: TVector3;
+  FDistanceToModel: Single;
+
+const
+  DesiredUp: TVector3 = (Data: (0, 1, 0));
+
+begin
+  BboxSize := ModelProcessing.CalculateSumBbox
+    (ModelScene.Shapes.TraverseList(true, true, true));
+  FacingDirection := BboxSize.Center - Viewport2.Camera.Translation;
+  FDistanceToModel := BboxSize.AverageSize * 2.5;
+  APos := BboxSize.Center - (Normalized(FacingDirection) * FDistanceToModel);
+  Viewport2.Camera.AnimateTo(APos, FacingDirection, DesiredUp, 1.5);
+
 end;
 
 end.

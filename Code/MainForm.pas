@@ -29,7 +29,7 @@ type
     procedure FailureDetectionTimer(Sender: TObject);
     procedure SetErrorButtonClick(Sender: TObject);
     procedure StartStopAnimation(Sender: TObject);
-    procedure NewCamera(Error: string);
+    procedure NewCamera();
     procedure ListBoxPlayAnimation(Sender: TObject);
 
   private
@@ -252,7 +252,7 @@ begin
 
 end;
 
-procedure TForm1.NewCamera(Error: string);   //todo; to new class. Camera class? or existing?
+procedure TForm1.NewCamera;   //todo; to new class. Camera class? or existing?
 var
   APos: TVector3;
   BboxSize: TBox3D;
@@ -267,12 +267,7 @@ begin
   begin
     if not Viewport2.Exists then
       Viewport2.Exists := true;
-    BboxSize := ModelProcessing.CalculateSumBbox
-      (ModelScene.Shapes.TraverseList(true, true, true));
-    FacingDirection := BboxSize.Center - Viewport2.Camera.Translation;
-    FDistanceToModel := BboxSize.AverageSize * 2.5;
-    APos := BboxSize.Center - (Normalized(FacingDirection) * FDistanceToModel);
-    Viewport2.Camera.AnimateTo(APos, FacingDirection, DesiredUp, 1.5);
+      GLView.CalculateNewCameraPos(ModelScene);
   end
   else
   begin
@@ -304,11 +299,11 @@ begin
     begin // start error display
       SetFailedDetection;
       FindFailedNode(Error);
-      NewCamera(Error);
+      NewCamera;
     end;
   except
-    ErrorManager.HandleError('BEEEP Object: "' + Error +
-      '" location not found');
+     on E: Exception do
+      ErrorManager.HandleError('Error matching X3DNames CalculatingSumBox: ' + E.Message);
   end;
 end;
 
