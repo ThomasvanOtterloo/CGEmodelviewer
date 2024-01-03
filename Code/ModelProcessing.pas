@@ -39,9 +39,12 @@ implementation
 
 constructor TModelProcessing.Create(ModelScene: TCastleScene);
 begin
-
+if self.ModelScene = nil then
+begin
   self.ModelScene := ModelScene;
   ErrorManager := TErrorManager.Create;
+end;
+
 
 end;
 

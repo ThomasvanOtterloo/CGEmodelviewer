@@ -28,6 +28,7 @@ type
     Viewport2: TCastleViewport;
     MainNavIsActive: boolean;
     ModelProcessing: TModelProcessing;
+    ModelScene: TCastleScene;
 
   const
     OrbitMultiplier = 1.75;
@@ -41,7 +42,7 @@ type
     procedure SetBoolCamOrbitIsActive(boolInput: boolean);
     procedure SetBoolMainNav(boolInput: boolean);
     function GetBoolMainNav: boolean;
-    procedure CalculateNewCameraPos(ModelScene: TCastleScene);
+    procedure CalculateNewCameraPos(ModelProcessing: TModelProcessing; ModelScene: TCastleScene);
 
     // methods
     procedure Update(const SecondsPassed: Single;
@@ -61,9 +62,6 @@ begin
   TotalTimePassed := 0;
   CamOrbitIsActive := true;
   MainNavIsActive := true;
-
-
-
 
   Viewport1 := CastleControl.Container.DesignedComponent('Viewport1')
     as TCastleViewport;
@@ -139,7 +137,7 @@ begin
   end;
 end;
 
-procedure TCastleApp.CalculateNewCameraPos(ModelScene: TCastleScene);
+procedure TCastleApp.CalculateNewCameraPos(ModelProcessing: TModelProcessing; ModelScene: TCastleScene);
 var
   APos: TVector3;
   BboxSize: TBox3D;
@@ -156,7 +154,6 @@ begin
   FDistanceToModel := BboxSize.AverageSize * 2.5;
   APos := BboxSize.Center - (Normalized(FacingDirection) * FDistanceToModel);
   Viewport2.Camera.AnimateTo(APos, FacingDirection, DesiredUp, 1.5);
-
 end;
 
 end.

@@ -252,7 +252,7 @@ begin
 
 end;
 
-procedure TForm1.NewCamera;   //todo; to new class. Camera class? or existing?
+procedure TForm1.NewCamera;
 var
   APos: TVector3;
   BboxSize: TBox3D;
@@ -267,7 +267,12 @@ begin
   begin
     if not Viewport2.Exists then
       Viewport2.Exists := true;
-      GLView.CalculateNewCameraPos(ModelScene);
+
+//      BboxSize := ModelProcessing.CalculateSumBbox
+//    (ModelScene.Shapes.TraverseList(true, true, true));
+      GLView.CalculateNewCameraPos(ModelProcessing, ModelScene);
+
+
   end
   else
   begin
