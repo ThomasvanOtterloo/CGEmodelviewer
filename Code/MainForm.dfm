@@ -64,7 +64,7 @@ object Form1: TForm1
     Caption = 'DebugLine'
     TabOrder = 4
   end
-  object FailureDection: TTimer
+  object FailureDetectionTTimer: TTimer
     Interval = 500
     OnTimer = FailureDetectionTimer
     Left = 152

@@ -14,7 +14,7 @@ uses
   CastleRectangles, CastleColors, CastleScene, CastleViewport,
   Vcl.CastleControl,
 
-  Math, ErrorManager, ModelProcessing, ShapeNodeColor, T3DViewManager;
+  Math, ErrorManager, ModelProcessing, T3DViewManager;
 
 function GetCastleControl: TCastleControl;
 function FindCastleControls(Form: TForm): TArray<TCastleControl>;

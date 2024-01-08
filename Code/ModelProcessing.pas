@@ -17,6 +17,9 @@ uses
 type
   TModelProcessing = class
   private
+    LightIsRed: boolean;
+    MatStatusLight: TPhysicalMaterialNode;
+    StatusLightAppNode: TAppearanceNode;
 
     ErrorRootNode: TTransformNode; // TTransformNode RootNode;
     ErrorgroupNode: TGroupNode; // FIrst child
@@ -26,11 +29,18 @@ type
     procedure FindRootNodeAndBreakdown(var ErrorRootNode: TTransformNode;
       NodeName: string);
 
+
+  const
+    AlmostWhiteColor: TVector3 = (Data: (0.9, 0.9, 0.9));
+    RedishColor: TVector3 = (Data: (0.9, 0.1, 0.1));
+
   public
     constructor Create(ModelScene: TCastleScene);
     destructor Destroy; override;
     function SetFailedObject(NodeName: string): TArray<TShapeNodeColor>;
     function CalculateSumBbox(ShapeList: TShapeList): TBox3D;
+    procedure AnimateStatusLight;
+    procedure BackToOriginal;
   published
 
   end;
@@ -39,12 +49,21 @@ implementation
 
 constructor TModelProcessing.Create(ModelScene: TCastleScene);
 begin
-if self.ModelScene = nil then
-begin
-  self.ModelScene := ModelScene;
-  ErrorManager := TErrorManager.Create;
-end;
+  if self.ModelScene = nil then
+  begin
+    self.ModelScene := ModelScene;
+    ErrorManager := TErrorManager.Create;
+  end;
 
+  LightIsRed := false;
+
+  // search for statuslight object
+  try
+    StatusLightAppNode := ModelScene.Node('M_StatusLight') as TAppearanceNode;
+    MatStatusLight := StatusLightAppNode.Material as TPhysicalMaterialNode;
+  except
+    ErrorManager.HandleError('StatusLight not found.');
+  end;
 
 end;
 
@@ -104,6 +123,8 @@ var
   SumBox: TBox3D;
 
 begin
+ SumBox := TBox3D.Empty;
+
   try
     for I := 0 to ShapeList.Count - 1 do
     begin
@@ -141,6 +162,42 @@ begin
     // recursive pattern
     ErrorManager.HandleError('Given part name is not found in X3D file.');
   end;
+end;
+
+procedure TModelProcessing.AnimateStatusLight();
+var
+  I: Integer;
+begin
+  if LightIsRed then
+  begin
+    if MatStatusLight <> nil then
+      MatStatusLight.BaseColor := AlmostWhiteColor;
+    LightIsRed := false;
+    for I := 0 to Length(PShapeNodeColors) - 1 do
+      PShapeNodeColors[I].PhysicalMatNode.BaseColor := PShapeNodeColors[I]
+        .OriginalColor;
+  end
+  else
+  begin
+    if MatStatusLight <> nil then
+      MatStatusLight.BaseColor := RedishColor;
+    LightIsRed := true;
+    for I := 0 to Length(PShapeNodeColors) - 1 do
+      PShapeNodeColors[I].PhysicalMatNode.BaseColor := Vector3(0.9, 0.1, 0.1);
+
+  end;
+
+end;
+
+procedure TmodelProcessing.BackToOriginal();
+var
+I: integer;
+begin
+MatStatusLight.BaseColor := Vector3(0, 1, 0);
+      for I := 0 to Length(PShapeNodeColors) - 1 do
+        PShapeNodeColors[I].PhysicalMatNode.BaseColor := PShapeNodeColors[I]
+          .OriginalColor; // set error material node color to original color
+      SetLength(PShapeNodeColors, 0)
 end;
 
 end.

@@ -29,6 +29,10 @@ type
     MainNavIsActive: boolean;
     ModelProcessing: TModelProcessing;
     ModelScene: TCastleScene;
+    ModelCenter: TVector3;
+    DistanceToModel, AngleU: Single;
+    ExamineNavigation: TCastleExamineNavigation;
+    procedure ErrorNavController;
 
   const
     OrbitMultiplier = 1.75;
@@ -42,7 +46,8 @@ type
     procedure SetBoolCamOrbitIsActive(boolInput: boolean);
     procedure SetBoolMainNav(boolInput: boolean);
     function GetBoolMainNav: boolean;
-    procedure CalculateNewCameraPos(ModelProcessing: TModelProcessing; ModelScene: TCastleScene);
+    procedure CalculateNewCameraPos(ModelProcessing: TModelProcessing;
+      ModelScene: TCastleScene);
 
     // methods
     procedure Update(const SecondsPassed: Single;
@@ -51,7 +56,7 @@ type
     procedure UpdateMainCameraPosition(const ModelCenter: TVector3;
       const DistanceToModel, AngleU: Single);
     constructor Create(AOwner: TForm; CastleControl: TCastleControl);
-
+    procedure ErrorNavSetup(Sender: TObject);
   end;
 
 implementation
@@ -65,8 +70,15 @@ begin
 
   DefaultViewport := CastleControl.Container.DesignedComponent('Viewport1')
     as TCastleViewport;
+  ModelCenter := DefaultViewport.Items.BoundingBox.Center;
+  DistanceToModel := DefaultViewport.Items.BoundingBox.AverageSize *
+    OrbitMultiplier;
+
   ErrorScopeViewport := CastleControl.Container.DesignedComponent('Viewport2')
     as TCastleViewport;
+
+  ExamineNavigation := CastleControl.Container.DesignedComponent
+    ('ExamineNavigation1') as TCastleExamineNavigation;
 
 end;
 
@@ -83,17 +95,12 @@ end;
 procedure TCastleApp.Update(const SecondsPassed: Single;
   var HandleInput: boolean);
 var
-  ModelCenter: TVector3;
-  DistanceToModel, AngleU: Single;
+  AngleU: Single;
 begin
   inherited;
 
-  if CamOrbitIsActive then // private boolean in TForm. smart way to access it?
+  if CamOrbitIsActive then
   begin
-    ModelCenter := DefaultViewport.Items.BoundingBox.Center;
-    // private boolean in TForm
-    DistanceToModel := DefaultViewport.Items.BoundingBox.AverageSize *
-      OrbitMultiplier;
     TotalTimePassed := TotalTimePassed + SecondsPassed;
     AngleU := (DefaultOrbitSpeed * TotalTimePassed) * RadiansPerDegree;
     UpdateMainCameraPosition(ModelCenter, DistanceToModel, AngleU);
@@ -130,14 +137,15 @@ begin
   begin
     CamOrbitIsActive := false;
     AngleRotate := -0.01 * (Event.Position.X - Event.OldPosition.X);
-    LookTarget := DefaultViewport.Items.BoundingBox.Center;
+    LookTarget := ModelCenter;
     LookDir := LookTarget - DefaultViewport.Camera.Translation;
     LookDir := RotatePointAroundAxis(Vector4(DesiredUp, AngleRotate), LookDir);
     DefaultViewport.Camera.SetView(LookTarget - LookDir, LookDir, DesiredUp);
   end;
 end;
 
-procedure TCastleApp.CalculateNewCameraPos(ModelProcessing: TModelProcessing; ModelScene: TCastleScene);
+procedure TCastleApp.CalculateNewCameraPos(ModelProcessing: TModelProcessing;
+  ModelScene: TCastleScene);
 var
   APos: TVector3;
   BboxSize: TBox3D;
@@ -154,6 +162,37 @@ begin
   FDistanceToModel := BboxSize.AverageSize * 2.5;
   APos := BboxSize.Center - (Normalized(FacingDirection) * FDistanceToModel);
   ErrorScopeViewport.Camera.AnimateTo(APos, FacingDirection, DesiredUp, 1.5);
+
+  // trying to fix the navigation here?
+   ExamineNavigation.AutoCenterOfRotation := false;
+  ExamineNavigation.CenterOfRotation := BboxSize.Center;
+
+
+end;
+
+procedure TCastleApp.ErrorNavSetup(Sender: TObject);
+begin
+  if GetBoolMainNav then
+  begin
+    SetBoolMainNav(false);
+    ErrorScopeViewport.Navigation.Exists := true;
+    SetBoolCamOrbitIsActive(true);
+  end
+  else
+  begin
+    SetBoolMainNav(true);
+    ErrorScopeViewport.Navigation.Exists := false;
+    SetBoolCamOrbitIsActive(true);
+  end;
+
+end;
+
+procedure TCastleApp.ErrorNavController();
+begin
+  ErrorScopeViewport.Navigation.Radius := 0.05;
+
+
+
 end;
 
 end.

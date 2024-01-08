@@ -3,9 +3,9 @@ unit Unit3;
 interface
 
 uses
-  DUnitX.TestFramework,
+  DUnitX.TestFramework, TestFramework,
   Delphi.Mocks,
-  MainForm,
+  MainForm, T3DViewManager, ShapeNodeColor,ModelProcessing,CastleControlManager,
 
   //vlc
     Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
@@ -23,107 +23,57 @@ uses
 
 
 type
-  TFormMock = TMock<TForm1>;
-  TCastleControlMock = TMock<TCastleControl>;
+  TestTModelProcessing = class(TTestcase)
+ private
+    FModelProcessing: TModelProcessing;
+    FShapeList: TShapeList;
+    FBox1, FBox2: TBox3D;
+   protected
+    procedure SetUp; override;
+    procedure TearDown; override;
 
-  [TestFixture]
-  UnitTestsCGE = class
-  strict private
-  public
-    [Setup]
-    procedure Setup;
-    [TearDown]
-    procedure TearDown;
-    [Test]
-    procedure Test2(const AValue1 : Integer;const AValue2 : Integer);
-
-    var
-      FormMock: TFormMock;
-      CastleControlMock: TCastleControlMock;
-      MockScene: TMock<TCastleScene>;
+  published
+    procedure TestCalculateSumBbox;
   end;
 
 implementation
 
-procedure UnitTestsCGE.Setup;
+procedure TestTModelProcessing.SetUp;
+begin
+  // Initialize the TModelProcessing instance
+  FModelProcessing := TModelProcessing.Create(nil);
+
+  // Set up mock ShapeList and bounding boxes
+  FShapeList := TShapeList.Create(true);
+  FBox1 := TBox3D.Create(Point3D(0, 0, 0), Point3D(1, 1, 1));
+  FBox2 := TBox3D.Create(Point3D(1, 1, 1), Point3D(2, 2, 2));
+
+
+
+  // Here, you would need to add mock shapes to FShapeList
+  // and set their bounding boxes to FBox1 and FBox2
+end;
+
+procedure TestTModelProcessing.TearDown;
+begin
+  FModelProcessing.Free;
+  FShapeList.Free;
+end;
+
+procedure TestTModelProcessing.TestCalculateSumBbox;
 var
-  MockForm: TMock<TForm>;
-  MockCastleControl: TMock<TCastleControl>;
-  MockScene: TMock<TCastleScene>;  //sut
+  ExpectedResult, ActualResult: TBox3D;
 begin
-  // Create a mock form
-  MockForm := TMock<TForm>.Create;
+  // Define the expected result
+  ExpectedResult := FBox1 + FBox2; // This assumes your + operator on TBox3D is defined correctly
 
-  // Create a mock TCastleControl
-  MockCastleControl := TMock<TCastleControl>.Create(MockForm);
+  // Call the method
+  ActualResult := FModelProcessing.CalculateSumBbox(FShapeList);
 
-  // Create a mock TCastleScene
-  MockScene := TMock<TCastleScene>.Create;
-
-  MockScene.Create(MockForm.Instance);
-
-  // Configure the mock scene
-  MockScene.Setup.WillReturn('C:\Users\t.vanotterloo\Documents\SelfmadeDemos\CGEmodelviewer\data\8.glb').When.URL;
-
-  // Link the mock scene to the mock control if needed
-  MockCastleControl.Setup.WillReturn(MockScene.Instance);
-
-  // Continue with the setup...
+  // Check if the actual result matches the expected result
+  CheckTrue(ActualResult.Equals(ExpectedResult), 'CalculateSumBbox did not return the expected result');
 end;
-
-
-
-
-procedure UnitTestsCGE.TearDown;
-begin
-  Form1.Free; // Corrected reference to the field
-
-end;
-
-procedure UnitTestsCGE.Test2(const AValue1 : Integer;const AValue2 : Integer);
-var
-Input: string;
-//ModelScene: TCastleScene;
-
-begin
-  // Arange
-  Input := 'EthernetPort';
-
-
-  // Act
-
-  FormMock.Setup.Expect.Once.When.SetFailedObject(Input);
-  // Assert
-
-    Assert.IsTrue(True, 'This test always passes');
-end;
-
-//procedure UnitTestsCGE.TestSetFailedObjectWithValidNode;
-//var
-//  NodeNameOfFailedObject: string;
-//begin
-//  // Arrange
-//  NodeNameOfFailedObject := 'Fingers';
-//  try
-//    // Act
-//    TForm1.SetFailedObject(NodeNameOfFailedObject);
-//
-//    // Assert
-//    Assert.IsTrue(True, 'SetFailedObject executed without exception');
-//    // Here you might want to add more specific assertions
-//    // related to the expected outcomes of SetFailedObject
-//  except
-//    on E: Exception do
-//      Assert.Fail('Exception was raised: ' + E.Message);
-//  end;
-//end;
-
-
-
-
-
 
 initialization
-  TDUnitX.RegisterTestFixture(UnitTestsCGE);
-
+  RegisterTest(TestTModelProcessing.Suite);
 end.
