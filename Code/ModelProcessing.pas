@@ -10,12 +10,12 @@ uses
   CastleComponentSerialize, CastleKeysMouse, CastleLog, CastleControls,
   CastleVectors, CastleGLUtils, CastleUtils, CastleTriangles,
   CastleRectangles, CastleColors, CastleScene, CastleViewport,
-  Vcl.CastleControl,
+  Vcl.CastleControl, IModelProcessing,
 
   ErrorManager, ShapeNodeColor;
 
 type
-  TModelProcessing = class
+  TModelProcessing = class (TInterfacedObject, R_ModelProcessing)
   private
     LightIsRed: boolean;
     MatStatusLight: TPhysicalMaterialNode;
@@ -28,7 +28,6 @@ type
     PShapeNodeColors: array of TShapeNodeColor;
     procedure FindRootNodeAndBreakdown(var ErrorRootNode: TTransformNode;
       NodeName: string);
-
 
   const
     AlmostWhiteColor: TVector3 = (Data: (0.9, 0.9, 0.9));
@@ -49,11 +48,8 @@ implementation
 
 constructor TModelProcessing.Create(ModelScene: TCastleScene);
 begin
-  if self.ModelScene = nil then
-  begin
-    self.ModelScene := ModelScene;
-    ErrorManager := TErrorManager.Create;
-  end;
+  self.ModelScene := ModelScene;
+  self.ErrorManager := ErrorManager;
 
   LightIsRed := false;
 
@@ -123,7 +119,7 @@ var
   SumBox: TBox3D;
 
 begin
- SumBox := TBox3D.Empty;
+  SumBox := TBox3D.Empty;
 
   try
     for I := 0 to ShapeList.Count - 1 do
@@ -189,15 +185,15 @@ begin
 
 end;
 
-procedure TmodelProcessing.BackToOriginal();
+procedure TModelProcessing.BackToOriginal();
 var
-I: integer;
+  I: Integer;
 begin
-MatStatusLight.BaseColor := Vector3(0, 1, 0);
-      for I := 0 to Length(PShapeNodeColors) - 1 do
-        PShapeNodeColors[I].PhysicalMatNode.BaseColor := PShapeNodeColors[I]
-          .OriginalColor; // set error material node color to original color
-      SetLength(PShapeNodeColors, 0)
+  MatStatusLight.BaseColor := Vector3(0, 1, 0);
+  for I := 0 to Length(PShapeNodeColors) - 1 do
+    PShapeNodeColors[I].PhysicalMatNode.BaseColor := PShapeNodeColors[I]
+      .OriginalColor; // set error material node color to original color
+  SetLength(PShapeNodeColors, 0)
 end;
 
 end.

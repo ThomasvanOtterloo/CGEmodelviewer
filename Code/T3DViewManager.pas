@@ -5,7 +5,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
   System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
-  Vcl.StdCtrls, Vcl.ExtCtrls, ModelProcessing,
+  Vcl.StdCtrls, Vcl.ExtCtrls, ModelProcessing, I_T3DViewManager,
 
   CastleShapes, CastleCameras, X3DNodes, X3DLoad, CastleTransform,
   CastleBoxes, CastleSceneCore, X3DLoadInternalUtils, CastleUIControls,
@@ -15,7 +15,7 @@ uses
   Vcl.CastleControl;
 
 type
-  TCastleApp = class(TCastleView)
+  TCastleApp = class(TCastleView, R_T3DViewManager)
   published // items added from editor
 
   private

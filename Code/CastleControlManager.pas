@@ -20,6 +20,7 @@ function GetCastleControl: TCastleControl;
 function FindCastleControls(Form: TForm): TArray<TCastleControl>;
 function InitializeGLWin(Form: TForm): TCastleControl;
 procedure SetGLWinView(GLView: TCastleApp);
+function GetFpsCount():string;
 
 implementation
 
@@ -55,12 +56,10 @@ begin
 
 end;
 
-
 procedure SetGLWinView(GLView: TCastleApp);
 begin
-    GLWin.Container.View := GLView;
+  GLWin.Container.View := GLView;
 end;
-
 
 function FindCastleControls(Form: TForm): TArray<TCastleControl>; // second
 var
@@ -76,6 +75,11 @@ begin
     end;
   end;
 
+end;
+
+function GetFpsCount():string;
+begin
+  result := GLWin.Container.Fps.ToString;
 end;
 
 end.

@@ -12,12 +12,14 @@ program VCLTest;
   
 uses
   Vcl.Forms,
-  MainForm in 'Code/MainForm.pas' {Form1},
-  ErrorManager in 'Code/ErrorManager.pas',
-  ModelProcessing in 'Code/ModelProcessing.pas',
-  ShapeNodeColor in 'Code/ShapeNodeColor.pas',
-  T3DViewManager in 'Code/T3DViewManager.pas',
-  CastleControlManager in 'Code/CastleControlManager.pas';
+  MainForm in 'Code\MainForm.pas' {Form1},
+  ErrorManager in 'Code\ErrorManager.pas',
+  ModelProcessing in 'Code\ModelProcessing.pas',
+  ShapeNodeColor in 'Code\ShapeNodeColor.pas',
+  T3DViewManager in 'Code\T3DViewManager.pas',
+  CastleControlManager in 'Code\CastleControlManager.pas',
+  IModelProcessing in 'Code\Interfaces\IModelProcessing.pas',
+  I_T3DViewManager in 'Code\Interfaces\I_T3DViewManager.pas';
 
 {$R *.res}
 begin

@@ -24,9 +24,10 @@ type
     ListBox1: TListBox;
     FailureDetectionTTimer: TTimer;
     Button4: TButton;
-    StaticText3: TStaticText;
+    FPS: TTimer;
     procedure FormCreate(Sender: TObject);
     procedure FailureDetectionTimer(Sender: TObject);
+    procedure FPSTimer(Sender: TObject);
     procedure SetErrorButtonClick(Sender: TObject);
     procedure StartStopAnimation(Sender: TObject);
     procedure NewCamera();
@@ -44,8 +45,6 @@ type
     NavigateButton: TCastleButton;
     Items: TCastleRootTransform;
     ErrorCamera: TCastleCamera;
-
-    LabelFPS: TCastleLabel;
 
     OrbitRadius, OrbitSpeed, Angle: Double;
 
@@ -103,8 +102,7 @@ begin
 
   ModelScene := CastleControl.Container.DesignedComponent('ModelScene')
     as TCastleScene;
-  MainCamera := CastleControl.Container.DesignedComponent('MainCamera')
-    as TCastleCamera;
+
 
   DefaultViewport := CastleControl.Container.DesignedComponent('Viewport1')
     as TCastleViewport;
@@ -117,8 +115,6 @@ begin
     as TCastleButton;
   ExitButton := CastleControl.Container.DesignedComponent('ExitButton')
     as TCastleButton;
-  LabelFPS := CastleControl.Container.DesignedComponent('LabelFPS')
-    as TCastleLabel;
   NavigateButton := CastleControl.Container.DesignedComponent('NavigateButton')
     as TCastleButton;
 
@@ -182,6 +178,11 @@ begin
   begin
     ModelProcessing.AnimateStatusLight;
   end
+end;
+
+procedure TForm1.FPSTimer(Sender: TObject);
+begin
+Form1.Caption := 'FPS: '+ CastleControlManager.GetFpsCount;
 end;
 
 

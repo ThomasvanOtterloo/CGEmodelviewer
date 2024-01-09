@@ -23,6 +23,8 @@ object Form1: TForm1
     Container.Requirements.MultiSampling = 4
     Container.DesignUrl = 'castle-data:/test_3d.castle-user-interface'
     Align = alClient
+    ExplicitWidth = 1113
+    ExplicitHeight = 616
   end
   object SetErrorButton: TButton
     Left = 990
@@ -34,6 +36,8 @@ object Form1: TForm1
     Caption = 'Set Error on/off'
     TabOrder = 1
     OnClick = SetErrorButtonClick
+    ExplicitLeft = 984
+    ExplicitTop = 540
   end
   object ListBox1: TListBox
     Left = 952
@@ -44,6 +48,8 @@ object Form1: TForm1
     ItemHeight = 15
     TabOrder = 2
     OnClick = ListBoxPlayAnimation
+    ExplicitLeft = 946
+    ExplicitTop = 342
   end
   object Button4: TButton
     Left = 990
@@ -55,19 +61,18 @@ object Form1: TForm1
     Caption = 'start/stop animation'
     TabOrder = 3
     OnClick = StartStopAnimation
-  end
-  object StaticText3: TStaticText
-    Left = 8
-    Top = 8
-    Width = 61
-    Height = 19
-    Caption = 'DebugLine'
-    TabOrder = 4
+    ExplicitLeft = 984
+    ExplicitTop = 461
   end
   object FailureDetectionTTimer: TTimer
     Interval = 500
     OnTimer = FailureDetectionTimer
     Left = 152
     Top = 88
+  end
+  object FPS: TTimer
+    OnTimer = FPSTimer
+    Left = 768
+    Top = 224
   end
 end
