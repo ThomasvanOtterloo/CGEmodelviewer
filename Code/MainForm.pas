@@ -36,27 +36,14 @@ type
   private
     { Private declarations }
     GLView: TCastleApp;
-    MainCamera: TCastleCamera;
     ModelScene: TCastleScene;
     DefaultViewport: TCastleViewport;
     ErrorScopeViewport: TCastleViewport;
     MakeBiggerButton: TCastleButton;
     ExitButton: TCastleButton;
     NavigateButton: TCastleButton;
-    Items: TCastleRootTransform;
     ErrorCamera: TCastleCamera;
-
-    OrbitRadius, OrbitSpeed, Angle: Double;
-
-    ErrorRootNode: TTransformNode; // TTransformNode RootNode;
-    ErrorgroupNode: TGroupNode; // FIrst child
-
     FailureDetectedIsActive: boolean;
-
-    LightIsRed: boolean;
-
-    // PShapeNodeColors: array of TShapeNodeColor; // Pointer
-
     ErrorManager: TErrorManager;
     ModelProcessing: TModelProcessing;
 
@@ -65,7 +52,7 @@ type
     procedure InitVars;
     procedure InitEditorComponents;
     procedure ForwardEditorComponentsToMethods;
-    procedure SetFailedDetection;
+    procedure SetFailDetectionLight;
 
   public
     { Public declarations }
@@ -99,14 +86,10 @@ end;
 procedure TForm1.InitEditorComponents;
 begin
   CastleControl := CastleControlManager.GetCastleControl;
-
   ModelScene := CastleControl.Container.DesignedComponent('ModelScene')
     as TCastleScene;
-
-
   DefaultViewport := CastleControl.Container.DesignedComponent('Viewport1')
     as TCastleViewport;
-
   ErrorScopeViewport := CastleControl.Container.DesignedComponent('Viewport2')
     as TCastleViewport;
   ErrorCamera := CastleControl.Container.DesignedComponent('ErrorCamera')
@@ -117,7 +100,6 @@ begin
     as TCastleButton;
   NavigateButton := CastleControl.Container.DesignedComponent('NavigateButton')
     as TCastleButton;
-
 end;
 
 procedure TForm1.ExitFailDetectionViewport(Sender: TObject);
@@ -162,7 +144,7 @@ begin
 
   FailureDetectedIsActive := false;
 
-  // sets extra ErrorCamera in the world.
+  // creates extra ErrorCamera in the world.
   ErrorScopeViewport.Items := DefaultViewport.Items;
   ErrorScopeViewport.Camera := ErrorCamera;
   ErrorScopeViewport.Exists := false;
@@ -171,8 +153,6 @@ end;
 
 
 procedure TForm1.FailureDetectionTimer(Sender: TObject);
-var
-  I: Integer;
 begin
   if FailureDetectedIsActive then
   begin
@@ -205,11 +185,9 @@ end;
 procedure TForm1.SetErrorButtonClick(Sender: TObject); // +
 var
   Error: string;
-  I: Integer;
 begin
-  Error := 'EthernetPort';
-  // As TransformNode - Look at X3D file.
-  // errordata containts location of error
+  Error := 'Fingers'; // As TransformNode - Look at X3D file.
+  // errordata containts location of error. todo; merge with platebutler.
   if FailureDetectedIsActive then
   begin
      FailureDetectedIsActive := false;
@@ -222,24 +200,23 @@ begin
   try
     if FailureDetectedIsActive then
     begin // start error display
-      SetFailedDetection;
+      SetFailDetectionLight;
       ModelProcessing.SetFailedObject(Error);
       NewCamera;
-
     end
     else
     begin // back to default
-      SetFailedDetection;
+      SetFailDetectionLight;
       ModelProcessing.BackToOriginal;
     end;
   except
     on E: Exception do
-      ErrorManager.HandleError('Error matching X3DNames CalculatingSumBox: ' +
+      ErrorManager.HandleError('Something went wrong: ' +
         E.Message);
   end;
 end;
 
-procedure TForm1.SetFailedDetection(); // -
+procedure TForm1.SetFailDetectionLight(); // -
 begin
   if FailureDetectedIsActive then
   begin // start error display

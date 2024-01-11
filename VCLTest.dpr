@@ -19,7 +19,7 @@ uses
   T3DViewManager in 'Code\T3DViewManager.pas',
   CastleControlManager in 'Code\CastleControlManager.pas',
   IModelProcessing in 'Code\Interfaces\IModelProcessing.pas',
-  I_T3DViewManager in 'Code\Interfaces\I_T3DViewManager.pas';
+  I3DViewManager in 'Code\Interfaces\I3DViewManager.pas';
 
 {$R *.res}
 begin

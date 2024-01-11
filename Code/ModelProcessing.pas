@@ -15,7 +15,7 @@ uses
   ErrorManager, ShapeNodeColor;
 
 type
-  TModelProcessing = class (TInterfacedObject, R_ModelProcessing)
+  TModelProcessing = class(TInterfacedObject, I_ModelProcessing)
   private
     LightIsRed: boolean;
     MatStatusLight: TPhysicalMaterialNode;

@@ -100,7 +100,7 @@
         <DCCReference Include="Code\T3DViewManager.pas"/>
         <DCCReference Include="Code\CastleControlManager.pas"/>
         <DCCReference Include="Code\Interfaces\IModelProcessing.pas"/>
-        <DCCReference Include="Code\Interfaces\I_T3DViewManager.pas"/>
+        <DCCReference Include="Code\Interfaces\I3DViewManager.pas"/>
         <None Include="VCLTest.dpr"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>

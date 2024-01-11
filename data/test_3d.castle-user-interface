@@ -75,7 +75,7 @@
           "Y" : 5.0000000000000000E+002,
           "Z" : 5.0000000000000000E+002
         },
-        "URL" : "castle-data:/8.glb"
+        "URL" : "castle-data:/RoboCleanVersion.glb"
       },
       {
         "$$ClassName" : "TCastleCamera",

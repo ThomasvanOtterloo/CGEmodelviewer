@@ -14,7 +14,7 @@ uses
   ErrorManager, ShapeNodeColor;
 
 type
-R_ModelProcessing = interface
+I_ModelProcessing = interface
 
     function SetFailedObject(NodeName: string): TArray<TShapeNodeColor>;
     function CalculateSumBbox(ShapeList: TShapeList): TBox3D;

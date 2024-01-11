@@ -5,7 +5,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
   System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
-  Vcl.StdCtrls, Vcl.ExtCtrls, ModelProcessing, I_T3DViewManager,
+  Vcl.StdCtrls, Vcl.ExtCtrls, ModelProcessing, I3DViewManager,
 
   CastleShapes, CastleCameras, X3DNodes, X3DLoad, CastleTransform,
   CastleBoxes, CastleSceneCore, X3DLoadInternalUtils, CastleUIControls,
@@ -15,7 +15,7 @@ uses
   Vcl.CastleControl;
 
 type
-  TCastleApp = class(TCastleView, R_T3DViewManager)
+  TCastleApp = class(TCastleView, I_3DViewManager)
   published // items added from editor
 
   private
@@ -23,16 +23,13 @@ type
     LookTarget: TVector3;
     TotalTimePassed: Single;
     CamOrbitIsActive: boolean;
-    CastleControl: TCastleControl;
     DefaultViewport: TCastleViewport;
     ErrorScopeViewport: TCastleViewport;
     MainNavIsActive: boolean;
-    ModelProcessing: TModelProcessing;
-    ModelScene: TCastleScene;
     ModelCenter: TVector3;
-    DistanceToModel, AngleU: Single;
+    DistanceToModel: Single;
     ExamineNavigation: TCastleExamineNavigation;
-    procedure ErrorNavController;
+    Position: TVector3;
 
   const
     OrbitMultiplier = 1.75;
@@ -40,6 +37,7 @@ type
     RadiansPerDegree = Pi / 180;
     DesiredUp: TVector3 = (Data: (0, 1, 0));
     DefaultOrbitSpeed = 10; // Degrees per second
+    GlobalMouseWheelDelta: Integer = 0;
 
   public
     // getters / setters
@@ -50,6 +48,7 @@ type
       ModelScene: TCastleScene);
 
     // methods
+    function Press(const Event: TInputPressRelease): boolean; override;
     procedure Update(const SecondsPassed: Single;
       var HandleInput: boolean); override;
     function Motion(const Event: TInputMotion): boolean; override;
@@ -98,7 +97,6 @@ var
   AngleU: Single;
 begin
   inherited;
-
   if CamOrbitIsActive then
   begin
     TotalTimePassed := TotalTimePassed + SecondsPassed;
@@ -129,6 +127,7 @@ end;
 function TCastleApp.Motion(const Event: TInputMotion): boolean;
 var
   AngleRotate: Single;
+
 begin
   result := inherited;
   if result then
@@ -140,9 +139,46 @@ begin
     LookTarget := ModelCenter;
     LookDir := LookTarget - DefaultViewport.Camera.Translation;
     LookDir := RotatePointAroundAxis(Vector4(DesiredUp, AngleRotate), LookDir);
-    DefaultViewport.Camera.SetView(LookTarget - LookDir, LookDir, DesiredUp);
+    Position := LookTarget - LookDir;
+    DefaultViewport.Camera.SetView(Position, LookDir, DesiredUp);
   end;
+
 end;
+
+
+function TCastleApp.Press(const Event: TInputPressRelease): boolean;
+const
+  ZoomSpeed = 0.1; // Adjust the zoom speed as needed
+begin
+   Result := inherited;
+  if Result then Exit; // allow the ancestor to handle keys
+
+  if (MainNavIsActive) then
+  begin
+    if Event.IsMouseWheel(mwUp) then
+    begin
+      // Zoom in towards the object
+      LookDir := ModelCenter - DefaultViewport.Camera.Translation;
+      Position := LookTarget - LookDir;
+
+      Position := Position + LookDir * ZoomSpeed;
+      DefaultViewport.Camera.SetView(Position, LookDir, DesiredUp);
+      Exit(true); // event was handled
+    end
+    else if Event.IsMouseWheel(mwDown) then
+    begin
+      // Zoom out from the object
+      LookDir := ModelCenter - DefaultViewport.Camera.Translation;
+      Position := LookTarget - LookDir;
+
+      Position := Position - LookDir * ZoomSpeed;
+      DefaultViewport.Camera.SetView(Position, LookDir, DesiredUp);
+      Exit(true); // event was handled
+    end;
+  end;
+
+end;
+
 
 procedure TCastleApp.CalculateNewCameraPos(ModelProcessing: TModelProcessing;
   ModelScene: TCastleScene);
@@ -161,12 +197,12 @@ begin
   FacingDirection := BboxSize.Center - ErrorScopeViewport.Camera.Translation;
   FDistanceToModel := BboxSize.AverageSize * 2.5;
   APos := BboxSize.Center - (Normalized(FacingDirection) * FDistanceToModel);
+
   ErrorScopeViewport.Camera.AnimateTo(APos, FacingDirection, DesiredUp, 1.5);
 
   // trying to fix the navigation here?
-   ExamineNavigation.AutoCenterOfRotation := false;
+  ExamineNavigation.AutoCenterOfRotation := false;
   ExamineNavigation.CenterOfRotation := BboxSize.Center;
-
 
 end;
 
@@ -184,14 +220,6 @@ begin
     ErrorScopeViewport.Navigation.Exists := false;
     SetBoolCamOrbitIsActive(true);
   end;
-
-end;
-
-procedure TCastleApp.ErrorNavController();
-begin
-  ErrorScopeViewport.Navigation.Radius := 0.05;
-
-
 
 end;
 
